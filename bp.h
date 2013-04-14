@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <unistd.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -19,6 +19,10 @@
 
 #include <pthread.h>
 
+#include "log.h"
+#include "file_ctrl.h"
+#include "request.h"
 #define PORT 8889
 #define MAXLINE 1024
 #endif
+
