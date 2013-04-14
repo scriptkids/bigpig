@@ -17,5 +17,5 @@ client: client.o
 	gcc -o$@ $^
 clean:
 	rm -f *.o
-	rm -f server1 server_select server_select2 server_eopll
+	rm -f server1 server_select server_select2 server_epoll
 	rm -f client
