@@ -1,5 +1,5 @@
-#ifndef  __bigpig__
-#define  __bigpig__
+#ifndef  __BIGPIG__ 
+#define  __BIGPIG__
 
 #include <stdio.h>
 #include <stdlib.h>

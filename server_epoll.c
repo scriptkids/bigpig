@@ -9,13 +9,6 @@
  */
 #include "bp.h"
 #define MAX_EVENTS 10
-void header(int fd, char *buf)
-{
-      //strcat(buf,"\r\n");
-    write(fd, buf, strlen(buf) );
-
-    write(STDOUT_FILENO, buf, strlen(buf));
-}
 /*
 int file_len(FILE *fp)
 {
@@ -121,31 +114,13 @@ int main(void)
             else {
                 int num;
                 if( (num = read(events[n].data.fd, buf, MAXLINE)) == 0) {
-                    printf("read == 0\n");
+                    perror("1234read");
+                    //printf("read == 0\n");
                 } else {
-                    printf("%s\n",buf);
+                   // printf("%s\n",buf);
                     /* dosomething analysis buf*/
-                    show_info(buf);
-                    /*done !! */
-                    
-
-
-                    header(events[n].data.fd, "HTTP/1.1 404 NOT FOUND\r\n");
-                    header(events[n].data.fd,"Content-Type:text/html\r\n");
-                    char f_content[1024];
-                    FILE *fp;
-                    fp = fopen("index.html","rb");
-                    if(NULL == fp) {
-                        perror("file open error");
-                        return ;
-                    } 
-                    char tmp[100];
-                    int len = file_content(fp, f_content);
-                    sprintf(tmp, "Content-Length:%d\r\n\r\n",len);
-                    header(events[n].data.fd,tmp);
-                    sprintf(tmp,"%s\r\n",f_content);    
-                    header(events[n].data.fd, tmp);
-                    
+                    //show_info(events[n].data.fd, buf);
+                    handle_request(events[n].data.fd, buf);
                 }
             }
         }
