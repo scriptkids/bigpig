@@ -74,35 +74,36 @@ struct http_request* analysis_request(char buf[])
 
     return request; 
 }
-/*for debug*/
+/*only for debug*/
 void show_info(struct http_request* request)
 {
-    puts("in the show_info");
-    printf("Method is %s\n", request->method);
-    printf("Uri is %s\n", request->uri);
-    printf("http_version is %d\n",request->version);
-    printf("User-Agent is %s\n",request->UA);
+    debug("in the show_info");
+    debug("Method is %s\n", request->method);
+    debug("Uri is %s\n", request->uri);
+    debug("http_version is %d\n",request->version);
+    debug("User-Agent is %s\n",request->UA);
     if(request->cookie != NULL)
-         printf("cookie is %s\n",request->cookie);
-    
-   // printf("query is %s\n",request->query);
-    printf("refer is %s\n",request->refer);
-    printf("length is %s\n",request->length);
-    printf("type is %s\n",request->type);
-    printf("accept_type is %s\n",request->accept);
-    printf("host is %s\n",request->host);
-    printf("http->value is %s\n",request->value); 
-    puts("show_info end\n");
+         debug("cookie is %s\n",request->cookie);
+    debug("query is %s\n",request->query);
+    debug("refer is %s\n",request->refer);
+    debug("length is %s\n",request->length);
+    debug("type is %s\n",request->type);
+    debug("accept_type is %s\n",request->accept);
+    debug("host is %s\n",request->host);
+    debug("http->value is %s\n",request->value); 
+    debug("show_info end\n");
 }
 
 void handle_request(int fd, char buf[])
 {
     /*for debug*/
     printf("into handle_request \n");
-    printf("========the request is =======================\n");
+    printf("========the request is ===================================\n");
     printf("%s\n",buf);
     printf("===========request end ===================================\n");
     
+    char *base_dir = "www";
+    char *file_name;
     struct http_request* request;
     
     request = analysis_request(buf);
@@ -111,11 +112,8 @@ void handle_request(int fd, char buf[])
         return;
     }
     request->fd = fd;
-   /*for debug*/
+    /*for debug*/
     show_info(request);
-    
-    char *base_dir = "www";
-    char *file_name;
     
     if( !strcmp(request->method, "GET") ) {
         FILE *fp;
@@ -130,12 +128,13 @@ void handle_request(int fd, char buf[])
         if(NULL == fp) {
             http404(fd);
             strcpy(file_name, "www/404.html");
+            /*open the 404 page again*/
             fp = fopen(file_name,"r");
             if(NULL == fp) {
                 perror("There must be something wrong with 404page");
                 exit(0);
             }
-        }else{
+        } else {
             http200(fd);
         }
 
@@ -172,74 +171,67 @@ int script_file(struct http_request* request)
 
     if( (pid=fork()) < 0) {
         perror("fork");
-        return;
+        return -1;
     }
     if(pid == 0) { //child
         close(pipe_fd[1]);
         /*is this needed?*/
-        sleep(1);
+        //sleep(1);
         dup2(pipe_fd[0], STDIN_FILENO);
         dup2(request->fd, STDOUT_FILENO);
         execl("/usr/bin/python2", "python2", file_name, (char*)0); 
         exit(0);
     }else if (pid >0) { //father
        // printf("this is the father");
-        int len = atoi(request->length);
+        //int len = atoi(request->length);
         close(pipe_fd[0]);
-        char tmp[100];
+        //char tmp[100];
         
         http200(request->fd);
-       
-        sprintf(tmp,"Content-Length: %s\r\n\r\n",request->length); 
-//        write(request->fd, tmp, strlen(tmp));
-    //    write(request->fd, "/r/n", 2) ;
-        strcpy(tmp, "Transfer-Encoding: chunked\r\n\r\n");
-     //   write(request->fd, tmp, strlen(tmp));
+        //sprintf(tmp,"Content-Length: %s\r\n\r\n",request->length); 
         write(pipe_fd[1], request->value, strlen(request->value));
-        
-        write(stderr, request->value, strlen(request->value));
+        write(STDERR_FILENO, request->value, strlen(request->value));
         close(pipe_fd[1]); 
-
     }
+    return 0;
 }
 /*need fix*/
 void set_cgi_env(struct http_request* request) 
 {
-    //printf("%s%s%s",request->query, request->method,request->type);
-    fprintf(stderr,"begin setevn\n");
     if(request == NULL) {
-        fprintf(stderr,"request is nULL");
+        fprintf(stderr,"request is NULL");
         return ;
-    
     }
 
     setenv("REQUEST_METHOD","POST", 1);
     setenv("REQUEST_TYPE", "text/html", 1);
     setenv("CONTENT_LENGTH", request->length, 1);    
-/*    
-    fprintf(stderr,"%s\n",request->query);
-    fprintf(stderr,"%s\n",request->method);
-    fprintf(stderr,"%s\n",request->type);
-    fprintf(stderr,"%s\n",request->length);
+    /*    
+          fprintf(stderr,"%s\n",request->query);
+          fprintf(stderr,"%s\n",request->method);
+          fprintf(stderr,"%s\n",request->type);
+          fprintf(stderr,"%s\n",request->length);
 
-*/
 
-   // if(NULL != request->query) {
-    //    setenv("QUERY_STRING", request->query, 1);
-   // }
-    /* 
-    if(NULL != request->method) 
-    setenv("REQUEST_METHOD", request->method, 1);
-    if(NULL != request->type) 
-    setenv("CONTENT_TYPE", request->type, 1);
-    if(NULL != request->length)
-    setenv("CONTENT_LENGTH", request->length, 1);
-    */
-//    fprintf(stderr,"setevn end !!!"); 
+
+          if(NULL != request->query) {
+          setenv("QUERY_STRING", request->query, 1);
+          }
+
+          if(NULL != request->method) 
+          setenv("REQUEST_METHOD", request->method, 1);
+          if(NULL != request->type) 
+          setenv("CONTENT_TYPE", request->type, 1);
+          if(NULL != request->length)
+          setenv("CONTENT_LENGTH", request->length, 1);
+
+          fprintf(stderr,"setevn end !!!"); 
+          */
 }
 void header(int fd, char *buf)
 {
     write(fd, buf, strlen(buf) );
+    /*for debug*/
     write(STDOUT_FILENO, buf, strlen(buf));
 }
 void http200(int fd)

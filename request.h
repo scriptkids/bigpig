@@ -1,12 +1,12 @@
 #ifndef  __REQUEST__
 #define  __REQUEST__
+
+extern char http_header[][22];
 enum http_version {
     V0,
     V1,
     OHTER,
 };
-
-extern char http_header[][22];
 
 struct http_request {
     int     fd;
@@ -33,4 +33,5 @@ void header(int fd, char *buf);
 void http200(int fd);
 void http404(int fd);
 void set_cgi_env(struct http_request*);
+int  script_file(struct http_request*);
 #endif
