@@ -129,7 +129,7 @@ void handle_request(int fd, char buf[])
         fp = fopen(file_name,"r");
         if(NULL == fp) {
             http404(fd);
-            strcpy(file_name, "404.html");
+            strcpy(file_name, "www/404.html");
             fp = fopen(file_name,"r");
             if(NULL == fp) {
                 perror("There must be something wrong with 404page");
@@ -151,6 +151,7 @@ void handle_request(int fd, char buf[])
         fclose(fp);
         header(fd, buf);
     }else if( !strcmp(request->method, "POST") ) {  //for script
+        set_cgi_env(request);
         script_file(request); 
     }
 }
@@ -165,9 +166,6 @@ int script_file(struct http_request* request)
     pid_t pid;
     int pipe_fd[2];
     /*need fix*/
-    setenv("REQUEST_METHOD","POST", 1);
-    setenv("REQUEST_TYPE", "text/html", 1);
-    setenv("CONTENT_LENGTH", request->length, 1);    
     if( pipe(pipe_fd) < 0) {
         perror("pipe");
     }
@@ -189,11 +187,16 @@ int script_file(struct http_request* request)
         int len = atoi(request->length);
         close(pipe_fd[0]);
         char tmp[100];
+        
         http200(request->fd);
-        sprintf(tmp,"Content-Length: %s\r\n",request->length); 
-        write(request->fd, tmp, strlen(tmp));
+       
+        sprintf(tmp,"Content-Length: %s\r\n\r\n",request->length); 
+//        write(request->fd, tmp, strlen(tmp));
+    //    write(request->fd, "/r/n", 2) ;
+        strcpy(tmp, "Transfer-Encoding: chunked\r\n\r\n");
+     //   write(request->fd, tmp, strlen(tmp));
         write(pipe_fd[1], request->value, strlen(request->value));
-
+        
         write(stderr, request->value, strlen(request->value));
         close(pipe_fd[1]); 
 
@@ -209,13 +212,17 @@ void set_cgi_env(struct http_request* request)
         return ;
     
     }
-    
+
+    setenv("REQUEST_METHOD","POST", 1);
+    setenv("REQUEST_TYPE", "text/html", 1);
+    setenv("CONTENT_LENGTH", request->length, 1);    
+/*    
     fprintf(stderr,"%s\n",request->query);
     fprintf(stderr,"%s\n",request->method);
     fprintf(stderr,"%s\n",request->type);
     fprintf(stderr,"%s\n",request->length);
 
-
+*/
 
    // if(NULL != request->query) {
     //    setenv("QUERY_STRING", request->query, 1);
