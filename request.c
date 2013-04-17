@@ -5,10 +5,8 @@ char http_header[][22]={"Host:","Accept:",\
         "Accept-Encoding:", "Referer:", "Content-Type:", \
         "Content-Length:",};
 
-struct http_request* analysis_request(char buf[])
+int analysis_request(char buf[], struct http_request* request)
 {
-    struct http_request* request ;
-    request = (struct http_request*)malloc(sizeof(struct http_request));
     char f_line[100];
     char *tmp;
     int i;
@@ -72,7 +70,7 @@ struct http_request* analysis_request(char buf[])
         }
     }
 
-    return request; 
+    return 0; 
 }
 /*only for debug*/
 void show_info(struct http_request* request)
@@ -82,8 +80,8 @@ void show_info(struct http_request* request)
     debug("Uri is %s\n", request->uri);
     debug("http_version is %d\n",request->version);
     debug("User-Agent is %s\n",request->UA);
-    if(request->cookie != NULL)
-         debug("cookie is %s\n",request->cookie);
+    //if(request->cookie != NULL)
+    debug("cookie is %s\n",request->cookie);
     debug("query is %s\n",request->query);
     debug("refer is %s\n",request->refer);
     debug("length is %s\n",request->length);
@@ -93,7 +91,19 @@ void show_info(struct http_request* request)
     debug("http->value is %s\n",request->value); 
     debug("show_info end\n");
 }
+void init_request(struct http_request* request)
+{
+    if(NULL == request) {
+        debug("init_request: request is NULL\n");
+        return;
+    }
+    request->UA     = NULL;
+    request->cookie = NULL;
+    request->query  = NULL;
+    request->refer  = NULL;
+    request->type   = NULL;
 
+}
 void handle_request(int fd, char buf[])
 {
     /*for debug*/
@@ -105,12 +115,16 @@ void handle_request(int fd, char buf[])
     char *base_dir = "www";
     char *file_name;
     struct http_request* request;
+    request = (struct http_request*)malloc(sizeof(struct http_request));
+    init_request(request); 
     
-    request = analysis_request(buf);
+    analysis_request(buf, request);
+    /*no more needed*/
     if(NULL == request ) {
-        perror("request is NULL");
+        debug("request is NULL\n");
         return;
     }
+
     request->fd = fd;
     /*for debug*/
     show_info(request);

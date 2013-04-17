@@ -26,7 +26,7 @@ struct http_request {
 };
 
 struct http_request* get_info(char buf[]);
-
+int  analysis_request(char buf[], struct http_request* request);
 void show_info(struct http_request*);
 void handle_request(int fd, char buf[]);
 void header(int fd, char *buf);
@@ -34,4 +34,5 @@ void http200(int fd);
 void http404(int fd);
 void set_cgi_env(struct http_request*);
 int  script_file(struct http_request*);
+void init_request(struct http_request*);
 #endif
