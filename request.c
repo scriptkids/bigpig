@@ -107,10 +107,11 @@ void init_request(struct http_request* request)
 void handle_request(int fd, char buf[])
 {
     /*for debug*/
-    printf("into handle_request \n");
-    printf("========the request is ===================================\n");
-    printf("%s\n",buf);
-    printf("===========request end ===================================\n");
+    
+    debug("into handle_request \n");
+    debug("========the request is ===================================\n");
+    debug("%s\n",buf);
+    debug("===========request end ===================================\n");
     
     char *base_dir = "www";
     char *file_name;
@@ -138,12 +139,12 @@ void handle_request(int fd, char buf[])
             sprintf(file_name, "%s%s", base_dir, request->uri);
         }
 
-        fp = fopen(file_name,"r");
+        fp = fopen(file_name,"rb");
         if(NULL == fp) {
             http404(fd);
             strcpy(file_name, "www/404.html");
             /*open the 404 page again*/
-            fp = fopen(file_name,"r");
+            fp = fopen(file_name,"rb");
             if(NULL == fp) {
                 perror("There must be something wrong with 404page");
                 exit(0);
@@ -167,6 +168,8 @@ void handle_request(int fd, char buf[])
         set_cgi_env(request);
         script_file(request); 
     }
+    /*need to do access_log GET / HTTP/1.1  200 */
+
 }
 
 int script_file(struct http_request* request)
@@ -213,40 +216,20 @@ int script_file(struct http_request* request)
 void set_cgi_env(struct http_request* request) 
 {
     if(request == NULL) {
-        fprintf(stderr,"request is NULL");
+        debug("request is NULL\n");
         return ;
     }
 
     setenv("REQUEST_METHOD","POST", 1);
     setenv("REQUEST_TYPE", "text/html", 1);
     setenv("CONTENT_LENGTH", request->length, 1);    
-    /*    
-          fprintf(stderr,"%s\n",request->query);
-          fprintf(stderr,"%s\n",request->method);
-          fprintf(stderr,"%s\n",request->type);
-          fprintf(stderr,"%s\n",request->length);
-
-
-
-          if(NULL != request->query) {
-          setenv("QUERY_STRING", request->query, 1);
-          }
-
-          if(NULL != request->method) 
-          setenv("REQUEST_METHOD", request->method, 1);
-          if(NULL != request->type) 
-          setenv("CONTENT_TYPE", request->type, 1);
-          if(NULL != request->length)
-          setenv("CONTENT_LENGTH", request->length, 1);
-
-          fprintf(stderr,"setevn end !!!"); 
-          */
 }
 void header(int fd, char *buf)
 {
     write(fd, buf, strlen(buf) );
     /*for debug*/
-    write(STDOUT_FILENO, buf, strlen(buf));
+    debug(buf);
+//    write(STDERR_FILENO, buf, strlen(buf));
 }
 void http200(int fd)
 {

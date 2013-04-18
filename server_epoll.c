@@ -20,8 +20,23 @@ int main(void)
     char buf[1024];
     bzero(buf,sizeof(buf));
     
-    listenfd = tcp_listen(&servaddr);
+    FILE *fp,*server_fp;
+    FILE *access_fp; 
+    server_fp   =   fopen("SERVER_LOG", "w+");
+    access_fp   =   fopen(ACCESS_LOG, "w+");
+    if(NULL == server_fp) {
+        notice("open SERVER_LOG error!!");
+        exit(1);
+    } 
+    if(NULL == access_fp) {
+        notice("open ACCESS_LOG error!!");
+        exit(1);
+    }
 
+    listenfd = tcp_listen(&servaddr);
+    /*need fix*/
+    access_log(server_fp, "server started at prort:%d\n", ntohs(servaddr.sin_port));
+    //debug("server started at PORT %d\n",ntohs(servaddr.sin_port));
     epfd = epoll_create(20);
 
     ev.events = EPOLLIN;
@@ -38,15 +53,20 @@ int main(void)
             if(events[n].data.fd == listenfd ) {
                 connfd = accept(listenfd, (struct sockaddr *)\
                         &cliaddr, &clilen);
-          //      printf("connfd == %d\n",connfd);
                 ev.events = EPOLLIN | EPOLLET;
                 ev.data.fd = connfd;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev); 
+                char *add;
+                //inet_aton(add, cliaddr.sin_addr.s_addr);
+                add = inet_ntoa(cliaddr.sin_addr);
+                
+                access_log(access_fp, "client connected %s\n", add);
             } 
             else {
                 int num;
                 if( (num = read(events[n].data.fd, buf, MAXLINE)) == 0) {
-                    perror("1234read");
+                    //perror("1234read");
+                    debug("read error!\n");
                     /*not tested yet*/
                     close(events[n].data.fd);
                 } else {

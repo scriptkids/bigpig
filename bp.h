@@ -23,7 +23,10 @@
 #include "file_ctrl.h"
 #include "request.h"
 #include "tcp_listen.h"
+#define DEBUG 0
 #define PORT 8889
 #define MAXLINE 1024
+#define ACCESS_LOG  "log/access_log"
+#define SERVER_LOG  "log/server_log"
 #endif
 

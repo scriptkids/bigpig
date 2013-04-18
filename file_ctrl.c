@@ -19,7 +19,6 @@ int file_len(FILE *fp)
 int file_content(FILE *fp, char *buf)
 {
     int len = 0;
-    printf("!!!!!!!!!!!!!!!!!!!!11111 %s",http_header[2]);    
     if( NULL == fp || NULL == buf) {
         err_log("file_content fp == NULL or buf == NULL ");
         return 0;
@@ -29,6 +28,6 @@ int file_content(FILE *fp, char *buf)
     while(!feof(fp)) {
         *(buf++) = getc(fp);
     }
-   
+//    *buf='\0'; 
     return len;
 }
