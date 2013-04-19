@@ -38,3 +38,11 @@ void access_log(FILE* fp, const char *format, ...)
     fflush(fp);
     va_end(args);
 }
+
+char *get_time()
+{
+    time_t now_t;
+
+    time(&now_t);
+    return ctime(&now_t);
+}

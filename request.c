@@ -141,7 +141,7 @@ void handle_request(int fd, char buf[])
 
         fp = fopen(file_name,"rb");
         if(NULL == fp) {
-            http404(fd);
+            http404(request);
             strcpy(file_name, "www/404.html");
             /*open the 404 page again*/
             fp = fopen(file_name,"rb");
@@ -150,7 +150,7 @@ void handle_request(int fd, char buf[])
                 exit(0);
             }
         } else {
-            http200(fd);
+            http200(request);
         }
 
         char *buf;
@@ -204,7 +204,7 @@ int script_file(struct http_request* request)
         close(pipe_fd[0]);
         //char tmp[100];
         
-        http200(request->fd);
+        http200(request);
         //sprintf(tmp,"Content-Length: %s\r\n\r\n",request->length); 
         write(pipe_fd[1], request->value, strlen(request->value));
         write(STDERR_FILENO, request->value, strlen(request->value));
@@ -231,13 +231,15 @@ void header(int fd, char *buf)
     debug(buf);
 //    write(STDERR_FILENO, buf, strlen(buf));
 }
-void http200(int fd)
+void http200(struct http_request* request)
 {
-    header(fd, "HTTP/1.1 200 OK\r\n");
-    header(fd, "Content-Type:text/html\r\n");
+    access_log(access_fp, "%s %s %d 200\n", request->method, request->uri, request->version);
+    header(request->fd, "HTTP/1.1 200 OK\r\n");
+    header(request->fd, "Content-Type:text/html\r\n");
 }
-void http404(int fd)
+void http404(struct http_request* request)
 {
-    header(fd, "HTTP/1.1 404 NOT FOUND\r\n");
-    header(fd, "Content-Type:text/html\r\n");
+    access_log(access_fp, "%s %s %d 404\n", request->method, request->uri, request->version);
+    header(request->fd, "HTTP/1.1 404 NOT FOUND\r\n");
+    header(request->fd, "Content-Type:text/html\r\n");
 }

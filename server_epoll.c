@@ -20,10 +20,10 @@ int main(void)
     char buf[1024];
     bzero(buf,sizeof(buf));
     
-    FILE *fp,*server_fp;
-    FILE *access_fp; 
-    server_fp   =   fopen("SERVER_LOG", "w+");
-    access_fp   =   fopen(ACCESS_LOG, "w+");
+//    FILE *server_fp;
+ //   FILE *access_fp; 
+    server_fp   =   fopen("SERVER_LOG", "a+");
+    access_fp   =   fopen(ACCESS_LOG, "a+");
     if(NULL == server_fp) {
         notice("open SERVER_LOG error!!");
         exit(1);
@@ -59,8 +59,10 @@ int main(void)
                 char *add;
                 //inet_aton(add, cliaddr.sin_addr.s_addr);
                 add = inet_ntoa(cliaddr.sin_addr);
-                
-                access_log(access_fp, "client connected %s\n", add);
+                char *now;
+                now = get_time(); 
+//                printf("now = %s\n", now);
+                access_log(access_fp, "%s connected at time %s", add, now);
             } 
             else {
                 int num;

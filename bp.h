@@ -17,6 +17,8 @@
 #include <sys/select.h>
 #include <sys/epoll.h>
 
+#include <time.h>
+
 #include <pthread.h>
 
 #include "log.h"
@@ -28,5 +30,8 @@
 #define MAXLINE 1024
 #define ACCESS_LOG  "log/access_log"
 #define SERVER_LOG  "log/server_log"
+
+FILE *server_fp;
+FILE *access_fp;
 #endif
 
