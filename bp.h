@@ -10,10 +10,11 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
-
+#include <dirent.h>
 #include <sys/select.h>
 #include <sys/epoll.h>
 
@@ -25,9 +26,10 @@
 #include "file_ctrl.h"
 #include "request.h"
 #include "tcp_listen.h"
-#define DEBUG 0
+#define DEBUG 1
 #define PORT 8889
 #define MAXLINE 1024
+#define BUFF_SIZE 1024
 #define ACCESS_LOG  "log/access_log"
 #define SERVER_LOG  "log/server_log"
 

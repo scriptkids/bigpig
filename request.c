@@ -138,7 +138,21 @@ void handle_request(int fd, char buf[])
         }else{
             sprintf(file_name, "%s%s", base_dir, request->uri);
         }
-
+        char *content; 
+        if( is_dir(file_name) == 1 ) {
+            
+            
+            
+            content = process_dir(file_name);
+            http200(request);
+            char head_buf[100]; 
+           // fprintf(stderr, "strlen=%s\n", content);
+            sprintf(head_buf, "Content-Length:%d\r\n\r\n", strlen(content));
+            header(fd, head_buf);
+            header(fd, "\r\n");
+            header(fd, content);
+            return;    
+        } 
         fp = fopen(file_name,"rb");
         if(NULL == fp) {
             http404(request);

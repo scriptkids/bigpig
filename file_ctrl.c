@@ -31,3 +31,49 @@ int file_content(FILE *fp, char *buf)
 //    *buf='\0'; 
     return len;
 }
+
+int is_dir(char *file_name)
+{// return 1 is dir return 0 is regular file
+    struct stat buf;
+    if(lstat(file_name, &buf) < 0) {
+        notice("lstat error");
+        return -1;
+    }
+
+    if(S_ISREG(buf.st_mode)) {
+        return 0;
+    }
+
+    if(S_ISDIR(buf.st_mode)) {
+        return 1;
+    }
+    /*need to test if here is a soft link*/
+    return -1;
+}
+
+char *process_dir(char *dir_name)
+{
+    DIR*            dir;
+    struct dirent*  dir_content;
+    char            *buf;
+    char            *result;
+   
+    dir = opendir(dir_name);
+    if(NULL == dir) {
+        notice("open dir %s failed \n", dir_name);
+        return NULL;
+    }
+    buf = (char*)malloc(BUFF_SIZE*sizeof(char));
+    result = (char*)malloc(BUFF_SIZE*sizeof(char));
+    *result = '\0';
+    while((dir_content = readdir(dir)) != NULL) {
+        sprintf(buf, "<p><a href=\"%s/%s\">%s</a></p>\r\n", dir_name, dir_content->d_name, dir_content->d_name);
+        fprintf(stderr, "<a href=\"%s/%s\">%s</a>\n", dir_name, dir_content->d_name, dir_content->d_name);
+        strcat(result, buf);
+    }
+    fprintf(stderr, "hello %s\n", result);
+    return result;
+}
+
+
+
