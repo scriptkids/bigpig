@@ -2,10 +2,16 @@
 #define  __REQUEST__
 
 extern char http_header[][22];
+enum type {
+    FILE_REG,
+    FILE_FOLD,
+    FILE_OTHER,
+};
+
 enum http_version {
     V0,
     V1,
-    OHTER,
+    VOTHER,
 };
 
 struct http_request {
@@ -35,4 +41,6 @@ void http404(struct http_request*);
 void set_cgi_env(struct http_request*);
 int  script_file(struct http_request*);
 void init_request(struct http_request*);
+void do_static_file(char *file_name, int fd);
+void do_folder(char *dir_name, int fd);
 #endif

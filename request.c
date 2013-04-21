@@ -107,18 +107,18 @@ void init_request(struct http_request* request)
 void handle_request(int fd, char buf[])
 {
     /*for debug*/
-    
+
     debug("into handle_request \n");
     debug("========the request is ===================================\n");
     debug("%s\n",buf);
     debug("===========request end ===================================\n");
-    
+
     char *base_dir = "www";
     char *file_name;
     struct http_request* request;
     request = (struct http_request*)malloc(sizeof(struct http_request));
     init_request(request); 
-    
+
     analysis_request(buf, request);
     /*no more needed*/
     if(NULL == request ) {
@@ -129,42 +129,66 @@ void handle_request(int fd, char buf[])
     request->fd = fd;
     /*for debug*/
     show_info(request);
-    
+
     if( !strcmp(request->method, "GET") ) {
-        FILE *fp;
+        //FILE *fp;
         file_name = (char *)malloc(1000*sizeof(char));
         if( !strcmp(request->uri, "/") ) {
             sprintf(file_name, "%s%s", base_dir, "/index.html");
         }else{
             sprintf(file_name, "%s%s", base_dir, request->uri);
         }
-        char *content; 
-        if( is_dir(file_name) == 1 ) {
-            
-            
-            
-            content = process_dir(file_name);
+
+        enum type f_type;
+        char tmp[BUFF_SIZE];
+
+
+        f_type = file_type(file_name);
+        if(FILE_FOLD == f_type) { 
+            //如果是文件夹，那么先查看index.html是否存在
+            //存在则打开index.html不存在，打开文件夹。
+            strcpy(tmp, file_name);
+            strcat(file_name, "/index.html");
+            if(FILE_OTHER == file_type(file_name)) { //index.html 文件不存在,返回文件夹内容
+                http200(request);
+                do_folder(tmp, fd);
+            }else {
+                http200(request);
+                do_static_file(file_name, fd);
+            } 
+        }else if(FILE_REG == f_type) {
             http200(request);
-            char head_buf[100]; 
-           // fprintf(stderr, "strlen=%s\n", content);
-            sprintf(head_buf, "Content-Length:%d\r\n\r\n", strlen(content));
-            header(fd, head_buf);
-            header(fd, "\r\n");
-            header(fd, content);
-            return;    
+            do_static_file(file_name, fd);      
+        }else if(FILE_OTHER == f_type) {
+            http404(request);
+            do_static_file("www/404.html", fd);
+        }
+
+        /*
+           char *content; 
+           if( is_dir(file_name) == 1 ) {
+           content = process_dir(file_name);
+           http200(request);
+           char head_buf[100]; 
+        // fprintf(stderr, "strlen=%s\n", content);
+        sprintf(head_buf, "Content-Length:%d\r\n\r\n", strlen(content));
+        header(fd, head_buf);
+        header(fd, "\r\n");
+        header(fd, content);
+        return;    
         } 
         fp = fopen(file_name,"rb");
         if(NULL == fp) {
-            http404(request);
-            strcpy(file_name, "www/404.html");
-            /*open the 404 page again*/
-            fp = fopen(file_name,"rb");
-            if(NULL == fp) {
-                perror("There must be something wrong with 404page");
-                exit(0);
-            }
+        http404(request);
+        strcpy(file_name, "www/404.html");
+        //open the 404 page again
+        fp = fopen(file_name,"rb");
+        if(NULL == fp) {
+        perror("There must be something wrong with 404page");
+        exit(0);
+        }
         } else {
-            http200(request);
+        http200(request);
         }
 
         char *buf;
@@ -178,14 +202,62 @@ void handle_request(int fd, char buf[])
         len = file_content(fp, buf);
         fclose(fp);
         header(fd, buf);
+        */ 
     }else if( !strcmp(request->method, "POST") ) {  //for script
         set_cgi_env(request);
         script_file(request); 
     }
-    /*need to do access_log GET / HTTP/1.1  200 */
+    /*need to do access_log  foramt is GET / HTTP/1.1  200 */
 
 }
+void do_static_file(char *file_name, int fd) {
+   char *buf, *tmp;
+   FILE *fp;
+   int  len;
 
+   fp = fopen(file_name, "r");
+   if(NULL == fp) {
+       notice("do_static_file , fopen , fp is NULL");
+       return;
+   }
+   len = file_len(fp);
+   buf = (char*)malloc(len*sizeof(char));
+   
+   file_content(fp, buf);
+   tmp = (char*)malloc((len+30)*sizeof(char));
+   notice("lenth=%d\n", len); 
+   sprintf(tmp, "Content-Length: %d\r\n\r\n", len);
+
+   header(fd, tmp);
+   header(fd, buf);
+} 
+void do_folder(char *dir_name, int fd) {
+    DIR             *dir;
+    struct dirent   *dir_content;
+    char            *buf;
+    char            *result;
+    int             len;
+    
+    dir = opendir(dir_name);
+    if(NULL == dir) {
+        notice("open dir %s failed\n", dir_name);
+    }
+
+    buf     = (char*)malloc(BUFF_SIZE*sizeof(char));
+    result  = (char*)malloc(BUFF_SIZE*sizeof(char));
+    *result = '\0';
+    dir_name+=strlen("www"); 
+    while((dir_content = readdir(dir)) != NULL) {
+        sprintf(buf, "<p><a href=\"%s/%s\">%s</a></p>\r\n", dir_name, dir_content->d_name, dir_content->d_name);
+        strcat(result, buf);  
+    }
+
+    len = strlen(result);
+    sprintf(buf, "Content-Length: %d\r\n\r\n", len);
+    
+    header(fd, buf);
+    header(fd, result); 
+}
 int script_file(struct http_request* request)
 {
     char *file_name;
@@ -213,13 +285,9 @@ int script_file(struct http_request* request)
         execl("/usr/bin/python2", "python2", file_name, (char*)0); 
         exit(0);
     }else if (pid >0) { //father
-       // printf("this is the father");
-        //int len = atoi(request->length);
         close(pipe_fd[0]);
-        //char tmp[100];
         
         http200(request);
-        //sprintf(tmp,"Content-Length: %s\r\n\r\n",request->length); 
         write(pipe_fd[1], request->value, strlen(request->value));
         write(STDERR_FILENO, request->value, strlen(request->value));
         close(pipe_fd[1]); 
@@ -242,8 +310,7 @@ void header(int fd, char *buf)
 {
     write(fd, buf, strlen(buf) );
     /*for debug*/
-    debug(buf);
-//    write(STDERR_FILENO, buf, strlen(buf));
+    //debug(buf);
 }
 void http200(struct http_request* request)
 {
@@ -255,5 +322,5 @@ void http404(struct http_request* request)
 {
     access_log(access_fp, "%s %s %d 404\n", request->method, request->uri, request->version);
     header(request->fd, "HTTP/1.1 404 NOT FOUND\r\n");
-    header(request->fd, "Content-Type:text/html\r\n");
+    header(request->fd, "Content-Type:text/html\r\n"); 
 }

@@ -32,23 +32,25 @@ int file_content(FILE *fp, char *buf)
     return len;
 }
 
-int is_dir(char *file_name)
+enum type file_type(char *file_name)
 {// return 1 is dir return 0 is regular file
     struct stat buf;
     if(lstat(file_name, &buf) < 0) {
-        notice("lstat error");
-        return -1;
+        notice("%s lstat error", file_name);
+        return FILE_OTHER;
     }
 
     if(S_ISREG(buf.st_mode)) {
-        return 0;
+        notice("%s is reg file\n", file_name);
+        return FILE_REG;
     }
 
     if(S_ISDIR(buf.st_mode)) {
-        return 1;
+        notice("%s is dir file\n", file_name);
+        return FILE_FOLD;
     }
     /*need to test if here is a soft link*/
-    return -1;
+    return FILE_OTHER;
 }
 
 char *process_dir(char *dir_name)
