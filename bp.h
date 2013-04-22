@@ -32,7 +32,7 @@
 #define BUFF_SIZE 10240
 #define ACCESS_LOG  "log/access_log"
 #define SERVER_LOG  "log/server_log"
-
+#define BASE_DIR    "www"
 FILE *server_fp;
 FILE *access_fp;
 #endif

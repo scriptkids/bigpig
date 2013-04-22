@@ -22,7 +22,7 @@ int main(void)
     
 //    FILE *server_fp;
  //   FILE *access_fp; 
-    server_fp   =   fopen("SERVER_LOG", "a+");
+    server_fp   =   fopen(SERVER_LOG, "a+");
     access_fp   =   fopen(ACCESS_LOG, "a+");
     if(NULL == server_fp) {
         notice("open SERVER_LOG error!!");

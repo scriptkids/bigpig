@@ -39,8 +39,9 @@ void header(int fd, char *buf);
 void http200(struct http_request*);
 void http404(struct http_request*);
 void set_cgi_env(struct http_request*);
-int  script_file(struct http_request*);
+int  do_script_file(struct http_request*);
 void init_request(struct http_request*);
 void do_static_file(char *file_name, int fd);
 void do_folder(char *dir_name, int fd);
+char *analysis_uri(struct http_request* request);
 #endif

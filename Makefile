@@ -1,6 +1,6 @@
 CFLAGS:=-Wall
 
-server_epoll: server_epoll.o tcp_listen.o log.o file_ctrl.o request.o
+bigpig: server_epoll.o tcp_listen.o log.o file_ctrl.o request.o
 	gcc -o$@ $^
 
 server1: server1.o tcp_listen.o
@@ -20,3 +20,4 @@ clean:
 	rm -f *.o
 	rm -f server1 server_select server_select2 server_epoll
 	rm -f client
+	rm -f bigpig

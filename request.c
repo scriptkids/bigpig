@@ -7,13 +7,14 @@ char http_header[][22]={"Host:","Accept:",\
 
 int analysis_request(char buf[], struct http_request* request)
 {
-    char f_line[100];
+    char req[MAXLINE];
     char *tmp;
     int i;
 
-    sscanf(buf, "%[^\n]", f_line);
+    //读取buf中的第一行，请求头
+    sscanf(buf, "%[^\n]", req);
 
-    tmp = strtok(f_line, " ");
+    tmp = strtok(req, " ");
     strcpy(request->method, tmp);
 
     tmp = strtok(NULL, " ");
@@ -37,7 +38,8 @@ int analysis_request(char buf[], struct http_request* request)
                 break;
             }
         }
-        /*a dirty workround need fix*/
+        //a dirty workround need fix
+        //请求的value位于请求头后。
        strcpy(request->value, tmp); 
         switch(i) {
             case 0: 
@@ -72,6 +74,25 @@ int analysis_request(char buf[], struct http_request* request)
 
     return 0; 
 }
+char *analysis_uri(struct http_request* request) 
+{
+    char *ptr = request->uri;
+    char *tmp, *result; 
+    
+    tmp = malloc(strlen(request->uri));
+    result   = tmp;
+    while( *ptr != '?' && *ptr != '\0') {
+        *(tmp++) = *(ptr++);
+    }
+    *tmp = '\0';
+    if('?' == *ptr) {
+        ptr++;
+        request->query = malloc(strlen(request->uri));
+        strcpy(request->query, ptr);
+        debug("request->query is %s\n",request->query);
+    }
+    return result;
+}
 /*only for debug*/
 void show_info(struct http_request* request)
 {
@@ -80,7 +101,6 @@ void show_info(struct http_request* request)
     debug("Uri is %s\n", request->uri);
     debug("http_version is %d\n",request->version);
     debug("User-Agent is %s\n",request->UA);
-    //if(request->cookie != NULL)
     debug("cookie is %s\n",request->cookie);
     debug("query is %s\n",request->query);
     debug("refer is %s\n",request->refer);
@@ -107,15 +127,14 @@ void init_request(struct http_request* request)
 void handle_request(int fd, char buf[])
 {
     /*for debug*/
-
-    debug("into handle_request \n");
     debug("========the request is ===================================\n");
     debug("%s\n",buf);
     debug("===========request end ===================================\n");
 
-    char *base_dir = "www";
+    char *base_dir = BASE_DIR;
     char *file_name;
     struct http_request* request;
+    
     request = (struct http_request*)malloc(sizeof(struct http_request));
     init_request(request); 
 
@@ -127,21 +146,19 @@ void handle_request(int fd, char buf[])
     }
 
     request->fd = fd;
-    /*for debug*/
-    show_info(request);
 
     if( !strcmp(request->method, "GET") ) {
         //FILE *fp;
-        file_name = (char *)malloc(1000*sizeof(char));
+        file_name = (char *)malloc((strlen(request->uri) + strlen(base_dir))*sizeof(char));
         if( !strcmp(request->uri, "/") ) {
             sprintf(file_name, "%s%s", base_dir, "/index.html");
         }else{
-            sprintf(file_name, "%s%s", base_dir, request->uri);
+            char *name = analysis_uri(request);
+            sprintf(file_name, "%s%s", base_dir, name);
         }
 
         enum type f_type;
         char tmp[BUFF_SIZE];
-
 
         f_type = file_type(file_name);
         if(FILE_FOLD == f_type) { 
@@ -161,52 +178,16 @@ void handle_request(int fd, char buf[])
             do_static_file(file_name, fd);      
         }else if(FILE_OTHER == f_type) {
             http404(request);
-            do_static_file("www/404.html", fd);
+            sprintf(tmp, "%s/404.html", base_dir);
+            do_static_file(tmp, fd);
         }
 
-        /*
-           char *content; 
-           if( is_dir(file_name) == 1 ) {
-           content = process_dir(file_name);
-           http200(request);
-           char head_buf[100]; 
-        // fprintf(stderr, "strlen=%s\n", content);
-        sprintf(head_buf, "Content-Length:%d\r\n\r\n", strlen(content));
-        header(fd, head_buf);
-        header(fd, "\r\n");
-        header(fd, content);
-        return;    
-        } 
-        fp = fopen(file_name,"rb");
-        if(NULL == fp) {
-        http404(request);
-        strcpy(file_name, "www/404.html");
-        //open the 404 page again
-        fp = fopen(file_name,"rb");
-        if(NULL == fp) {
-        perror("There must be something wrong with 404page");
-        exit(0);
-        }
-        } else {
-        http200(request);
-        }
-
-        char *buf;
-        int len ;
-        len = file_len(fp);
-        buf = (char*)malloc(len * (sizeof(char)) );
-
-        sprintf(buf, "Content-Length:%d\r\n\r\n",len);
-        header(fd,buf);
-
-        len = file_content(fp, buf);
-        fclose(fp);
-        header(fd, buf);
-        */ 
     }else if( !strcmp(request->method, "POST") ) {  //for script
         set_cgi_env(request);
-        script_file(request); 
+        do_script_file(request); 
     }
+    /*for debug*/
+    show_info(request);
     /*need to do access_log  foramt is GET / HTTP/1.1  200 */
 
 }
@@ -217,8 +198,7 @@ void do_static_file(char *file_name, int fd) {
 
    fp = fopen(file_name, "r");
    if(NULL == fp) {
-       notice("do_static_file , fopen , fp is NULL");
-       return;
+       notice("do_static_file , fopen , fp is NULL %s\n",file_name);
    }
    len = file_len(fp);
    buf = (char*)malloc(len*sizeof(char));
@@ -246,7 +226,7 @@ void do_folder(char *dir_name, int fd) {
     buf     = (char*)malloc(BUFF_SIZE*sizeof(char));
     result  = (char*)malloc(BUFF_SIZE*sizeof(char));
     *result = '\0';
-    dir_name+=strlen("www"); 
+    dir_name+= strlen(BASE_DIR);
     while((dir_content = readdir(dir)) != NULL) {
         sprintf(buf, "<p><a href=\"%s/%s\">%s</a></p>\r\n", dir_name, dir_content->d_name, dir_content->d_name);
         strcat(result, buf);  
@@ -258,15 +238,16 @@ void do_folder(char *dir_name, int fd) {
     header(fd, buf);
     header(fd, result); 
 }
-int script_file(struct http_request* request)
+int do_script_file(struct http_request* request)
 {
     char *file_name;
-    char *base_dir = "www/";
-    file_name = (char*)malloc(1000*sizeof(char));
-
-    sprintf(file_name, "%s%s", base_dir, request->uri);
+    char *base_dir = BASE_DIR;
     pid_t pid;
     int pipe_fd[2];
+    
+    file_name = (char*)malloc(strlen(request->uri));
+
+    sprintf(file_name, "%s%s", base_dir, request->uri);
     /*need fix*/
     if( pipe(pipe_fd) < 0) {
         perror("pipe");
