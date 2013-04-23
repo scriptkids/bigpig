@@ -36,7 +36,7 @@ int main(void)
     listenfd = tcp_listen(&servaddr);
     /*need fix*/
     access_log(server_fp, "server started at prort:%d\n", ntohs(servaddr.sin_port));
-    //debug("server started at PORT %d\n",ntohs(servaddr.sin_port));
+    //DEBUG("server started at PORT %d\n",ntohs(servaddr.sin_port));
     epfd = epoll_create(20);
 
     ev.events = EPOLLIN;
@@ -48,7 +48,7 @@ int main(void)
     for(;;) {
         nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
         //printf("nfds == %d\n",nfds);
-        debug("epoll_wait nfds == %d\n", nfds);
+        DEBUG("epoll_wait nfds == %d\n", nfds);
         for(n = 0; n < nfds; n++) {
             if(events[n].data.fd == listenfd ) {
                 connfd = accept(listenfd, (struct sockaddr *)\
@@ -68,7 +68,7 @@ int main(void)
                 int num;
                 if( (num = read(events[n].data.fd, buf, MAXLINE)) == 0) {
                     //perror("1234read");
-                    debug("read error!\n");
+                    DEBUG("read error!\n");
                     /*not tested yet*/
                     close(events[n].data.fd);
                 } else {

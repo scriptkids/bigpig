@@ -4,17 +4,28 @@ void err_log(char *buf)
     write(STDERR_FILENO, buf, strlen(buf));
 }
 
-#if DEBUG 
-void debug(const char* format, ...)
+#if ISDEBUG 
+/*
+inline void debug(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
     fprintf(stderr, "DEBUG:");
     vfprintf(stderr, format, args);
     va_end(args);
+}*/
+inline void debug(char *filename, int line, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    fprintf(stderr, "%s [%d]line\t", filename, line);
+    fprintf(stderr, "DEBUG:");
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
+    va_end(args);
 }
 #else
-void debug(const char* format, ...)
+void debug(char *filename, int line, const char* format, ...)
 {
     ;
 }

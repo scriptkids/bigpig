@@ -10,7 +10,6 @@ int analysis_request(char buf[], struct http_request* request)
     char req[MAXLINE];
     char *tmp;
     int i;
-
     //读取buf中的第一行，请求头
     sscanf(buf, "%[^\n]", req);
 
@@ -89,32 +88,32 @@ char *analysis_uri(struct http_request* request)
         ptr++;
         request->query = malloc(strlen(request->uri));
         strcpy(request->query, ptr);
-        debug("request->query is %s\n",request->query);
+        DEBUG("request->query is %s",request->query);
     }
     return result;
 }
-/*only for debug*/
+/*only for DEBUG*/
 void show_info(struct http_request* request)
 {
-    debug("in the show_info");
-    debug("Method is %s\n", request->method);
-    debug("Uri is %s\n", request->uri);
-    debug("http_version is %d\n",request->version);
-    debug("User-Agent is %s\n",request->UA);
-    debug("cookie is %s\n",request->cookie);
-    debug("query is %s\n",request->query);
-    debug("refer is %s\n",request->refer);
-    debug("length is %s\n",request->length);
-    debug("type is %s\n",request->type);
-    debug("accept_type is %s\n",request->accept);
-    debug("host is %s\n",request->host);
-    debug("http->value is %s\n",request->value); 
-    debug("show_info end\n");
+    DEBUG("in the show_info");
+    DEBUG("Method is %s ", request->method);
+    DEBUG("Uri is %s ", request->uri);
+    DEBUG("http_version is %d ",request->version);
+    DEBUG("User-Agent is %s ",request->UA);
+    DEBUG("cookie is %s ",request->cookie);
+    DEBUG("query is %s ",request->query);
+    DEBUG("refer is %s ",request->refer);
+    DEBUG("length is %s ",request->length);
+    DEBUG("type is %s ",request->type);
+    DEBUG("accept_type is %s ",request->accept);
+    DEBUG("host is %s ",request->host);
+    DEBUG("http->value is %s ",request->value); 
+    DEBUG("show_info end ");
 }
 void init_request(struct http_request* request)
 {
     if(NULL == request) {
-        debug("init_request: request is NULL\n");
+        DEBUG("init_request: request is NULL");
         return;
     }
     request->UA     = NULL;
@@ -126,10 +125,10 @@ void init_request(struct http_request* request)
 }
 void handle_request(int fd, char buf[])
 {
-    /*for debug*/
-    debug("========the request is ===================================\n");
-    debug("%s\n",buf);
-    debug("===========request end ===================================\n");
+    /*for DEBUG*/
+    DEBUG("========the request is ===================================\n");
+    DEBUG("%s",buf);
+    DEBUG("===========request end ===================================\n");
 
     char *base_dir = BASE_DIR;
     char *file_name;
@@ -141,7 +140,7 @@ void handle_request(int fd, char buf[])
     analysis_request(buf, request);
     /*no more needed*/
     if(NULL == request ) {
-        debug("request is NULL\n");
+        DEBUG("request is NULL");
         return;
     }
 
@@ -186,7 +185,7 @@ void handle_request(int fd, char buf[])
         set_cgi_env(request);
         do_script_file(request); 
     }
-    /*for debug*/
+    /*for DEBUG*/
     show_info(request);
     /*need to do access_log  foramt is GET / HTTP/1.1  200 */
 
@@ -279,7 +278,7 @@ int do_script_file(struct http_request* request)
 void set_cgi_env(struct http_request* request) 
 {
     if(request == NULL) {
-        debug("request is NULL\n");
+        DEBUG("request is NULL");
         return ;
     }
 
@@ -290,8 +289,8 @@ void set_cgi_env(struct http_request* request)
 void header(int fd, char *buf)
 {
     write(fd, buf, strlen(buf) );
-    /*for debug*/
-    //debug(buf);
+    /*for DEBUG*/
+    //DEBUG(buf);
 }
 void http200(struct http_request* request)
 {

@@ -1,7 +1,7 @@
 #ifndef  __BIGPIG__ 
 #define  __BIGPIG__
 
-#define DEBUG 1
+#define ISDEBUG 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
