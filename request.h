@@ -17,7 +17,7 @@ enum http_version {
 struct http_request {
     int     fd;
     char    method[16];
-    char    uri[100];
+    char    *uri;
     enum    http_version version;
     char    *UA;
     char    *cookie;

@@ -10,6 +10,7 @@ try:
     html1 = "<html> your username is " + name
     html2 = "your passwd is " + passwd + "</html>"
 except:
+    html1 = "<html> your username is NULL "
     html2 ="your passwd is NULL </html>"
 #print "HTTP/1.1 200 OK"
 #print "Content-type: text/html"

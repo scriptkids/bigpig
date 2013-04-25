@@ -9,7 +9,7 @@
  */
 #include "bp.h"
 
-#define MAX_EVENTS 10
+#define MAX_EVENTS 1000
 
 int main(void)
 {
