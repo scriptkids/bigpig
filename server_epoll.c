@@ -67,7 +67,6 @@ int main(void)
             else {
                 int num;
                 if( (num = read(events[n].data.fd, buf, MAXLINE)) == 0) {
-                    //perror("1234read");
                     DEBUG("read error!\n");
                     /*not tested yet*/
                     close(events[n].data.fd);

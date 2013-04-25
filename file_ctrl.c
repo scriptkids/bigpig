@@ -15,7 +15,15 @@ int file_len(FILE *fp)
     fseek(fp, pos, SEEK_SET);
     return len;
 }
+/*
+int file_len(char *filename)
+{
+    struct stat temp;
 
+    stat(filename, &temp);
+    return temp.st_size;
+}
+*/
 int file_content(FILE *fp, char *buf)
 {
     int len = 0;
