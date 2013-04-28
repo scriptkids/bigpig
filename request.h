@@ -25,7 +25,7 @@ struct http_request {
     char    *refer;
     char    length[10];
     char    *type; 
-    char    value[100]; //for post
+//    char    value[100]; //for post
     /*need fix*/
     char host[100];
     char accept[100];

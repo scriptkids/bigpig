@@ -14,24 +14,35 @@ inline void debug(const char* format, ...)
     vfprintf(stderr, format, args);
     va_end(args);
 }*/
-inline void debug(char *filename, int line, const char* format, ...)
+inline void debug(char *filename, char *func, int line, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "%s [%d]line\t", filename, line);
+    fprintf(stderr, "%s %s [%d]line\t", filename, func, line);
     fprintf(stderr, "DEBUG:");
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");
     va_end(args);
 }
 #else
-void debug(char *filename, int line, const char* format, ...)
+void debug(char *filename, char *func, int line, const char* format, ...)
 {
     ;
 }
 #endif
 
-void notice(const char* format, ...)
+inline void notice(char *filename, char *func, int line, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    fprintf(stderr, "%s %s [%d]line\t", filename, func, line);
+    fprintf(stderr, "DEBUG:");
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+}
+/*
+void NOTICE(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -39,7 +50,7 @@ void notice(const char* format, ...)
     vfprintf(stderr, format, args);
     va_end(args);
 }
-
+*/
 void access_log(FILE* fp, const char *format, ...)
 {
     va_list args;

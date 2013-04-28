@@ -26,7 +26,10 @@ int main(void)
             sizeof(servaddr));
     
     listen(listenfd, 20);
- */  
+ */ 
+
+    server_fp = fopen(SERVER_LOG, "a+");
+    access_fp = fopen(ACCESS_LOG, "a+"); 
     listenfd = tcp_listen(&servaddr); 
     maxfd = listenfd;
     maxi = -1;
@@ -73,9 +76,10 @@ int main(void)
                     close(sockfd);
                     FD_CLR(sockfd, &allset);
                     client[i] = -1;
-                } else
-                    write(sockfd, buf, n);
-
+                } else {
+                    handle_request(sockfd, buf);
+//                    write(sockfd, buf, n);
+                }
                 if(--nready <= 0)
                     break;
             }

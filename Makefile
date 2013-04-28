@@ -6,7 +6,7 @@ bigpig: server_epoll.o tcp_listen.o log.o file_ctrl.o request.o
 server1: server1.o tcp_listen.o
 	gcc -o$@ $^
 
-server_select: server_select.o tcp_listen.o
+server_select: server_select.o tcp_listen.o log.o file_ctrl.o request.o
 	gcc -o$@ $^
 
 #	./server_epoll

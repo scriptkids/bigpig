@@ -44,19 +44,20 @@ enum type file_type(char *file_name)
 {// return 1 is dir return 0 is regular file
     struct stat buf;
     if(lstat(file_name, &buf) < 0) {
-        notice("%s lstat error", file_name);
+        NOTICE("%s lstat error", file_name);
         return FILE_OTHER;
     }
 
     if(S_ISREG(buf.st_mode)) {
-        notice("%s is reg file\n", file_name);
+        NOTICE("%s is reg file", file_name);
         return FILE_REG;
     }
 
     if(S_ISDIR(buf.st_mode)) {
-        notice("%s is dir file\n", file_name);
+        NOTICE("%s is dir file", file_name);
         return FILE_FOLD;
     }
+    DEBUG("file is not a reg or folder");
     /*need to test if here is a soft link*/
     return FILE_OTHER;
 }
@@ -70,7 +71,7 @@ char *process_dir(char *dir_name)
    
     dir = opendir(dir_name);
     if(NULL == dir) {
-        notice("open dir %s failed \n", dir_name);
+        NOTICE("open dir %s failed \n", dir_name);
         return NULL;
     }
     buf = (char*)malloc(BUFF_SIZE*sizeof(char));

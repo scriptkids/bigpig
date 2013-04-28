@@ -19,6 +19,7 @@ int analysis_request(char buf[], struct http_request* request)
     tmp = strtok(NULL, " ");
     request->uri = (char *)malloc(strlen(tmp) * sizeof(char));
     strcpy(request->uri, tmp);
+    
     DEBUG(request->uri);
 
     tmp = strtok(NULL, " ");
@@ -135,9 +136,9 @@ void init_request(struct http_request* request)
 void handle_request(int fd, char buf[])
 {
     /*for DEBUG*/
-    DEBUG("========the request is ===================================\n");
-    DEBUG("%s",buf);
-    DEBUG("===========request end ===================================\n");
+    //DEBUG("========the request is ===================================\n");
+    //DEBUG("%s",buf);
+    //DEBUG("===========request end ===================================\n");
 
     char *base_dir = BASE_DIR;
     char *file_name;
@@ -169,28 +170,34 @@ void handle_request(int fd, char buf[])
         char tmp[BUFF_SIZE];
 
         f_type = file_type(file_name);
-        if(FILE_FOLD == f_type) { 
+        if (FILE_FOLD == f_type) { 
             //如果是文件夹，那么先查看index.html是否存在
             //存在则打开index.html不存在，打开文件夹。
+            DEBUG("文件夹");
             strcpy(tmp, file_name);
             strcat(tmp, "/index.html");
-            if(FILE_OTHER == file_type(tmp)) { //index.html 文件不存在,返回文件夹内容
+            if (FILE_OTHER == file_type(tmp)) { //index.html 文件不存在,返回文件夹内容
+                DEBUG("文件夹下不存在index.html");
                 http200(request);
                 do_folder(file_name, fd);
             }else {//index.html 文件存在，打开index.html
+                DEBUG("文件夹下存在index.html");
                 http200(request);
                 do_static_file(tmp, fd);
             } 
         }else if(FILE_REG == f_type) { 
             //请求是正常文件
+            DEBUG("正常文件");
             http200(request);
+            DEBUG("http200done\n");
             do_static_file(file_name, fd);
-            return;
+            DEBUG("正常文件done");
+           // return;
         }else if(FILE_OTHER == f_type) {
             http404(request);
             sprintf(tmp, "%s/404.html", base_dir);
             do_static_file(tmp, fd);
-            return;
+            //return;
         }
 
     }else if( NULL != strstr(request->uri, "/cgi-bin") ) {  //for script
@@ -240,7 +247,7 @@ void handle_request(int fd, char buf[])
     }
     */
     //for DEBUG
-    show_info(request);
+    //show_info(request);
     //need to do access_log  foramt is GET / HTTP/1.1  200 
 
 }
@@ -249,20 +256,24 @@ void do_static_file(char *file_name, int fd) {
    FILE *fp;
    int  len;
 
+   DEBUG("in do_static_file");
    fp = fopen(file_name, "r");
    if(NULL == fp) {
-       notice("do_static_file , fopen , fp is NULL %s\n",file_name);
+       NOTICE("do_static_file , fopen , fp is NULL %s\n",file_name);
    }
    len = file_len(fp);
    buf = (char*)malloc(len*sizeof(char));
    
    file_content(fp, buf);
    tmp = (char*)malloc((len+30)*sizeof(char));
-   notice("lenth=%d\n", len); 
+   
+   NOTICE("lenth=%d\n", len); 
+  
    sprintf(tmp, "Content-Length: %d\r\n\r\n", len);
 
    header(fd, tmp);
    header(fd, buf);
+   fclose(fp);
 } 
 void do_folder(char *dir_name, int fd) {
     DIR             *dir;
@@ -273,7 +284,7 @@ void do_folder(char *dir_name, int fd) {
     
     dir = opendir(dir_name);
     if(NULL == dir) {
-        notice("open dir %s failed\n", dir_name);
+        NOTICE("open dir %s failed\n", dir_name);
     }
 
     buf     = (char*)malloc(BUFF_SIZE*sizeof(char));
@@ -343,15 +354,26 @@ void set_cgi_env(struct http_request* request)
 }
 void header(int fd, char *buf)
 {
-    write(fd, buf, strlen(buf) );
+    DEBUG("begin header %d", fd);
+    int left, num;
+
+    left = strlen(buf);
+   
+    while(left > 0) {
+        num = write(fd, buf, left); 
+        left = left - num; 
+    }
+    DEBUG("end header");
     /*for DEBUG*/
     //DEBUG(buf);
 }
 void http200(struct http_request* request)
 {
-    access_log(access_fp, "%s %s %d 200\n", request->method, request->uri, request->version);
+    //access_log(access_fp, "%s %s %d 200\n", request->method, request->uri, request->version);
+    DEBUG("begind http200");
     header(request->fd, "HTTP/1.1 200 OK\r\n");
     header(request->fd, "Content-Type:text/html\r\n");
+    DEBUG("end http200");
 }
 void http404(struct http_request* request)
 {
