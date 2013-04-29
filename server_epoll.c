@@ -44,7 +44,7 @@ int main(void)
     }
 
     while(1) { 
-        DEBUG("begin while");  
+//        DEBUG("begin while");  
         nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
         //printf("nfds == %d\n",nfds);
         NOTICE("epoll_wait nfds == %d\n", nfds);
@@ -74,6 +74,6 @@ int main(void)
                 }
             }
         }
-    NOTICE("end while");
+ //   NOTICE("end while");
     }//end while
 }

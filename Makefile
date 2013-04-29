@@ -3,6 +3,8 @@ CFLAGS:=-Wall
 bigpig: server_epoll.o tcp_listen.o log.o file_ctrl.o request.o
 	gcc -o$@ $^
 
+server_epoll: server_epoll2.o tcp_listen.o log.o file_ctrl.o request.o
+	gcc -o$@ $^
 server1: server1.o tcp_listen.o
 	gcc -o$@ $^
 
