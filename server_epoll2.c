@@ -10,16 +10,73 @@
 #include "bp.h"
 
 #define MAX_EVENTS 1000
-
-int main(void)
+void run_server(int listenfd) 
 {
-    struct sockaddr_in servaddr, cliaddr;
-    int listenfd, epfd,connfd,n,nfds;
-    socklen_t clilen;
     struct epoll_event ev,events[MAX_EVENTS];
     char buf[1024];
+    struct sockaddr_in cliaddr;
+    socklen_t clilen;
+    int epfd, nfds, connfd;
+    int i, num;
+    char *add, *now;
+    pid_t pid;
+
     bzero(buf,sizeof(buf));
-    
+    epfd = epoll_create(20);
+
+    ev.events = EPOLLIN;
+    ev.data.fd = listenfd; 
+    if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
+        perror("epoll_ctl: listenfd"); 
+    }
+
+    /*fork出worker进程*/
+    for (i = 0; i < WORKER_NUM; i++) {
+        if ((pid = fork()) == 0) {
+            break;
+        } else if (pid < 0) {
+            perror("fork error!");
+            exit(1);
+        }
+    }
+
+    if (pid > 0) {//master 
+        /*do something*/
+        char *string = "this is the master !\n";
+        write(STDOUT_FILENO, string, strlen(string)); 
+
+    } else {//worker
+        while(1) { 
+            nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
+            NOTICE("pid is %d epoll_wait nfds == %d\n",getpid(), nfds);
+            for (i = 0; i < nfds; i++) {
+                if (events[i].data.fd == listenfd) {
+                    connfd = accept(listenfd, (struct sockaddr *)\
+                            &cliaddr, &clilen);
+                    NOTICE("pid is %d connfd is %d",getpid(), connfd);
+                    ev.events = EPOLLIN | EPOLLET;
+                    ev.data.fd = connfd;
+                    epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev); 
+                    add = inet_ntoa(cliaddr.sin_addr);
+                    now = get_time(); 
+                    access_log(access_fp, "%s connected at time %s", add, now);
+                } else {
+                    if ((num = read(events[i].data.fd, buf, MAXLINE)) <= 0) {
+                        NOTICE("pid is %d read error!\n", getpid());
+                        /*not tested yet*/
+                        close(events[i].data.fd);
+                    } else {
+                        handle_request(events[i].data.fd, buf);
+                        NOTICE("pid is %d handle_request DONE!!", getpid());
+                    }
+                }
+            }
+            NOTICE("end while");
+        }//end while
+    }
+}
+void init_server()
+{
     server_fp   =   fopen(SERVER_LOG, "a+");
     access_fp   =   fopen(ACCESS_LOG, "a+");
     if(NULL == server_fp) {
@@ -30,106 +87,26 @@ int main(void)
         NOTICE("open ACCESS_LOG error!!");
         exit(1);
     }
-
-    listenfd = tcp_listen(&servaddr);
-    /*need fix*/
-    access_log(server_fp, "server started at prort:%d\n", ntohs(servaddr.sin_port));
-    //NOTICE("server started at PORT %d\n",ntohs(servaddr.sin_port));
-    epfd = epoll_create(20);
-
-    ev.events = EPOLLIN;
-    ev.data.fd = listenfd; 
-    if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
-        perror("epoll_ctl: listenfd"); 
-    }
-
-
-    pid_t pid;
-    pid = fork();
-    if (pid < 0) {
-        perror("fork");
-    }
-
-    if (pid > 0) { //parents
-        pid_t ppid;
-        ppid = fork();
-        if (ppid < 0) {
-            perror("fork");
-        }
-        if (ppid > 0) {
-            DEBUG("This is the parents");
-        }
-        if (0 == ppid) {
-            while(1) { 
-                DEBUG("begin while");  
-                nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
-                //printf("nfds == %d\n",nfds);
-                NOTICE("pid is %d epoll_wait nfds == %d\n",getpid(), nfds);
-                for (n = 0; n < nfds; n++) {
-                    if (events[n].data.fd == listenfd) {
-                        connfd = accept(listenfd, (struct sockaddr *)\
-                                &cliaddr, &clilen);
-                        NOTICE("pid is %d connfd is %d",getpid(), connfd);
-                        ev.events = EPOLLIN | EPOLLET;
-                        ev.data.fd = connfd;
-                        epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev); 
-                        char *add;
-                        char *now;
-                        add = inet_ntoa(cliaddr.sin_addr);
-                        now = get_time(); 
-                        access_log(access_fp, "%s connected at time %s", add, now);
-                    } else {
-                        int num;
-                        if ((num = read(events[n].data.fd, buf, MAXLINE)) <= 0) {
-                            NOTICE("pid is %d read error!\n", getpid());
-                            /*not tested yet*/
-                            close(events[n].data.fd);
-                        } else {
-                            //NOTICE("begin handle_request");
-                            handle_request(events[n].data.fd, buf);
-                            NOTICE("pid is %d handle_request DONE!!", getpid());
-                        }
-                    }
-                }
-                NOTICE("end while");
-            }//end while
-        }
-    }
-
-    if (0 == pid) { //child
-            while(1) { 
-                DEBUG("begin while");  
-                nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
-                //printf("nfds == %d\n",nfds);
-                NOTICE("pid is %d epoll_wait nfds == %d\n", getpid(), nfds);
-                for (n = 0; n < nfds; n++) {
-                    if (events[n].data.fd == listenfd) {
-                        connfd = accept(listenfd, (struct sockaddr *)\
-                                &cliaddr, &clilen);
-                        NOTICE("pid is %d connfd is %d",getpid(), connfd);
-                        ev.events = EPOLLIN | EPOLLET;
-                        ev.data.fd = connfd;
-                        epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev); 
-                        char *add;
-                        char *now;
-                        add = inet_ntoa(cliaddr.sin_addr);
-                        now = get_time(); 
-                        access_log(access_fp, "%s connected at time %s", add, now);
-                    } else {
-                        int num;
-                        if ((num = read(events[n].data.fd, buf, MAXLINE)) <= 0) {
-                            NOTICE("pid is %d read error!", getpid());
-                            /*not tested yet*/
-                            close(events[n].data.fd);
-                        } else {
-                            //NOTICE("begin handle_request");
-                            handle_request(events[n].data.fd, buf);
-                            NOTICE("pid is %d handle_request DONE!!", getpid());
-                        }
-                    }
-                }
-                NOTICE("end while");
-            } 
-    
-    }
 }
+void free_server()
+{
+    fclose(server_fp);
+    fclose(access_fp);
+}
+int main(void)
+{
+    struct sockaddr_in servaddr;
+    int listenfd; 
+    
+    init_server();
+   
+    listenfd = tcp_listen(&servaddr);
+    
+    access_log(server_fp, "server started at prort:%d\n", ntohs(servaddr.sin_port));
+    run_server(listenfd);
+
+    free_server();
+
+    return 0;
+}
+

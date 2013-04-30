@@ -1,8 +1,8 @@
 #ifndef __LOG__
 #define __LOG__
 void err_log(char *buf);
-inline void debug(char *filename, char *func, int line, const char* format, ...);
-inline void NOTICE(char *filename, char *func, int line, const char* format, ...);
+inline void debug(const char *filename, const char *func, const int line, const char* format, ...);
+inline void notice(const char *filename, const char *func, const int line, const char* format, ...);
 //inline void debug(const char* format, ...);
 void access_log(FILE* fp, const char* format, ...);
 char *get_time();

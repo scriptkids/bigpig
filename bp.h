@@ -1,7 +1,7 @@
 #ifndef  __BIGPIG__ 
 #define  __BIGPIG__
 
-#define ISDEBUG 0
+#define ISDEBUG 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +33,7 @@
 #define ACCESS_LOG  "log/access_log"
 #define SERVER_LOG  "log/server_log"
 #define BASE_DIR    "www"
+#define WORKER_NUM 3
 FILE *server_fp;
 FILE *access_fp;
 #endif

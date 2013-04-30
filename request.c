@@ -33,6 +33,7 @@ int analysis_request(char buf[], struct http_request* request)
     if(tmp == NULL) {
         perror("tmp = NULL");
     }
+    request->query = malloc(BUFF_SIZE);
     while( (tmp = strtok(NULL, "\r\n")) != NULL) {
         for(i=0; i<9; i++) {
             if(strstr(tmp, http_header[i]) != NULL) {
@@ -44,7 +45,6 @@ int analysis_request(char buf[], struct http_request* request)
         //a dirty workround need fix
         //如果是post方法的话请求的query位于请求头后。
         if (i >= 9) {
-            request->query = malloc(strlen(tmp));
             strcpy(request->query, tmp); 
             DEBUG(request->query);
         }
@@ -204,48 +204,6 @@ void handle_request(int fd, char buf[])
         set_cgi_env(request);
         do_script_file(request); 
     }
-    /*
-    if( !strcmp(request->method, "GET") ) {
-        //FILE *fp;
-        file_name = (char *)malloc((strlen(request->uri) + strlen(base_dir))*sizeof(char));
-        if( !strcmp(request->uri, "/") ) {
-            sprintf(file_name, "%s%s", base_dir, "/index.html");
-        }else{
-            char *name = analysis_uri(request);
-            sprintf(file_name, "%s%s", base_dir, name);
-        }
-
-        enum type f_type;
-        char tmp[BUFF_SIZE];
-
-        f_type = file_type(file_name);
-        if(FILE_FOLD == f_type) { 
-            //如果是文件夹，那么先查看index.html是否存在
-            //存在则打开index.html不存在，打开文件夹。
-            strcpy(tmp, file_name);
-            strcat(file_name, "/index.html");
-            if(FILE_OTHER == file_type(file_name)) { //index.html 文件不存在,返回文件夹内容
-                http200(request);
-                do_folder(tmp, fd);
-            }else {
-                http200(request);
-                do_static_file(file_name, fd);
-            } 
-        }else if(FILE_REG == f_type) {
-            http200(request);
-            do_static_file(file_name, fd);      
-        }else if(FILE_OTHER == f_type) {
-            http404(request);
-            sprintf(tmp, "%s/404.html", base_dir);
-            do_static_file(tmp, fd);
-        }
-
-    //}else if( !strcmp(request->method, "POST") ) {  //for script
-    }else if( NULL != strstr(request->uri, "/cgi-bin") ) {  //for script
-        set_cgi_env(request);
-        do_script_file(request); 
-    }
-    */
     //for DEBUG
     //show_info(request);
     //need to do access_log  foramt is GET / HTTP/1.1  200 
@@ -282,6 +240,7 @@ void do_folder(char *dir_name, int fd) {
     char            *result;
     int             len;
     
+    DEBUG("in do_folder"); 
     dir = opendir(dir_name);
     if(NULL == dir) {
         NOTICE("open dir %s failed\n", dir_name);
@@ -334,7 +293,6 @@ int do_script_file(struct http_request* request)
         
         http200(request);
         write(pipe_fd[1], request->query, strlen(request->query));
-    //    write(STDERR_FILENO, request->query, strlen(request->query));
         DEBUG(request->query);
         close(pipe_fd[1]); 
     }

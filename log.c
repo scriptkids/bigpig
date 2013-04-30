@@ -14,29 +14,27 @@ inline void debug(const char* format, ...)
     vfprintf(stderr, format, args);
     va_end(args);
 }*/
-inline void debug(char *filename, char *func, int line, const char* format, ...)
+inline void debug(const char *filename, const char *func, const int line, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "%s %s [%d]line\t", filename, func, line);
-    fprintf(stderr, "DEBUG:");
+    fprintf(stderr, "%s [%s] [%d]line\t DEBUG: ", filename, func, line);
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");
     va_end(args);
 }
 #else
-void debug(char *filename, char *func, int line, const char* format, ...)
+void debug(const char *filename, const char *func, int line, const char* format, ...)
 {
     ;
 }
 #endif
 
-inline void notice(char *filename, char *func, int line, const char* format, ...)
+inline void notice(const char *filename, const char *func, const int line, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "%s %s [%d]line\t", filename, func, line);
-    fprintf(stderr, "DEBUG:");
+    fprintf(stderr, "%s [%s] [%d]line\t NOTICE: ", filename, func, line);
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");
     va_end(args);
