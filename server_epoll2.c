@@ -22,14 +22,6 @@ void run_server(int listenfd)
     pid_t pid;
 
     bzero(buf,sizeof(buf));
-    epfd = epoll_create(20);
-
-    ev.events = EPOLLIN;
-    ev.data.fd = listenfd; 
-    if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
-        perror("epoll_ctl: listenfd"); 
-    }
-
     /*fork出worker进程*/
     for (i = 0; i < WORKER_NUM; i++) {
         if ((pid = fork()) == 0) {
@@ -39,6 +31,15 @@ void run_server(int listenfd)
             exit(1);
         }
     }
+    /*
+    epfd = epoll_create(20);
+
+    ev.events = EPOLLIN;
+    ev.data.fd = listenfd; 
+    if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
+        perror("epoll_ctl: listenfd"); 
+    }
+*/
 
     if (pid > 0) {//master 
         /*do something*/
@@ -46,6 +47,13 @@ void run_server(int listenfd)
         write(STDOUT_FILENO, string, strlen(string)); 
 
     } else {//worker
+        epfd = epoll_create(20);
+
+        ev.events = EPOLLIN;
+        ev.data.fd = listenfd; 
+        if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
+            perror("epoll_ctl: listenfd"); 
+        }
         while(1) { 
             nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
             NOTICE("pid is %d epoll_wait nfds == %d\n",getpid(), nfds);
@@ -61,10 +69,15 @@ void run_server(int listenfd)
                     now = get_time(); 
                     access_log(access_fp, "%s connected at time %s", add, now);
                 } else {
-                    if ((num = read(events[i].data.fd, buf, MAXLINE)) <= 0) {
-                        NOTICE("pid is %d read error!\n", getpid());
+                    if ((num = read(events[i].data.fd, buf, MAXLINE)) < 0) {
+                        NOTICE("pid is %d read error! fd is %d\n", getpid(), events[i].data.fd);
                         /*not tested yet*/
                         close(events[i].data.fd);
+                        //shutdown(events[i].data.fd, SHUT_RDWR);
+                    } else if (0 == num) {
+                        NOTICE("pid is %d read error! fd is %d num =0;\n", getpid(), events[i].data.fd);
+                        close(events[i].data.fd);
+                        shutdown(events[i].data.fd, SHUT_RDWR);
                     } else {
                         handle_request(events[i].data.fd, buf);
                         NOTICE("pid is %d handle_request DONE!!", getpid());

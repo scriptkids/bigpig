@@ -18,7 +18,7 @@ inline void debug(const char *filename, const char *func, const int line, const 
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "%s [%s] [%d]line\t DEBUG: ", filename, func, line);
+    fprintf(stderr, "%d %s [%s] [%d]line\t DEBUG: ",getpid(), filename, func, line);
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");
     va_end(args);
@@ -34,7 +34,7 @@ inline void notice(const char *filename, const char *func, const int line, const
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "%s [%s] [%d]line\t NOTICE: ", filename, func, line);
+    fprintf(stderr, "%d %s [%s] [%d]line\t NOTICE: ",getpid(), filename, func, line);
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");
     va_end(args);
