@@ -8,3 +8,4 @@ struct pool_node {
 void *create_pool(int size);
 void *get_more_memory(struct pool_node *pool, int size);
 void *get_memory(struct pool_node *pool, int size);
+void destory_pool(struct pool_node *pool);

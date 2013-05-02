@@ -31,15 +31,6 @@ void run_server(int listenfd)
             exit(1);
         }
     }
-    /*
-    epfd = epoll_create(20);
-
-    ev.events = EPOLLIN;
-    ev.data.fd = listenfd; 
-    if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
-        perror("epoll_ctl: listenfd"); 
-    }
-*/
 
     if (pid > 0) {//master 
         /*do something*/
@@ -82,7 +73,9 @@ void run_server(int listenfd)
                         shutdown(events[i].data.fd, SHUT_RDWR);
                     } else {
                         NOTICE("begin to handle request");
+                        mem_pool = create_pool(102400);
                         handle_request(events[i].data.fd, buf);
+                        destory_pool(mem_pool);
                         NOTICE("pid is %d handle_request DONE!!", getpid());
                     }
                 }
@@ -103,11 +96,12 @@ void init_server()
         NOTICE("open ACCESS_LOG error!!");
         exit(1);
     }
+    /*
     mem_pool = create_pool(1024*1024);
     if (NULL == mem_pool) {
         NOTICE("no memory to malloc");
         exit(1);
-    }
+    }*/
 
 }
 void free_server()
