@@ -36,7 +36,6 @@ int main(void)
     access_log(server_fp, "server started at prort:%d\n", ntohs(servaddr.sin_port));
     //NOTICE("server started at PORT %d\n",ntohs(servaddr.sin_port));
     epfd = epoll_create(20);
-
     ev.events = EPOLLIN;
     ev.data.fd = listenfd; 
     if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
@@ -69,11 +68,14 @@ int main(void)
                     close(events[n].data.fd);
                 } else {
                     //NOTICE("begin handle_request");
+                    mem_pool = create_pool(1024*1024);
                     handle_request(events[n].data.fd, buf);
+                    destory_pool(mem_pool);
+                    close(events[n].data.fd);
                     DEBUG("handle_request DONE!!");
                 }
             }
         }
- //   NOTICE("end while");
+    NOTICE("end while");
     }//end while
 }
