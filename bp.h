@@ -27,14 +27,16 @@
 #include "file_ctrl.h"
 #include "request.h"
 #include "tcp_listen.h"
-#define PORT 8889
+#include "pool.h"
+#define PORT 80 
 #define MAXLINE 1024
-#define BUFF_SIZE 10240
+#define BUF_SIZE 10240
 #define ACCESS_LOG  "log/access_log"
 #define SERVER_LOG  "log/server_log"
 #define BASE_DIR    "www"
 #define WORKER_NUM 30
 FILE *server_fp;
 FILE *access_fp;
+struct pool_node *mem_pool;
 #endif
 

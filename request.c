@@ -17,10 +17,10 @@ int analysis_request(char buf[], struct http_request* request)
     strcpy(request->method, tmp);
 
     tmp = strtok(NULL, " ");
-    request->uri = (char *)malloc(strlen(tmp) * sizeof(char));
+    request->uri = (char*)get_memory(mem_pool, (strlen(tmp) + 1) * sizeof(char));
+    //request->uri = (char *)malloc(strlen(tmp) * sizeof(char));
     strcpy(request->uri, tmp);
     
-    DEBUG(request->uri);
 
     tmp = strtok(NULL, " ");
 
@@ -33,7 +33,9 @@ int analysis_request(char buf[], struct http_request* request)
     if(tmp == NULL) {
         perror("tmp = NULL");
     }
-    request->query = malloc(BUFF_SIZE);
+    /*need fix*/
+    request->query = (char*)get_memory(mem_pool, BUF_SIZE);
+    //request->query = malloc(BUF_SIZE);
     while( (tmp = strtok(NULL, "\r\n")) != NULL) {
         for(i=0; i<9; i++) {
             if(strstr(tmp, http_header[i]) != NULL) {
@@ -54,7 +56,8 @@ int analysis_request(char buf[], struct http_request* request)
             case 1:
                     strcpy(request->accept, tmp); break;
             case 2: 
-                    request->UA = (char*)malloc(strlen(tmp) * sizeof(char));
+                    request->UA = (char*)get_memory(mem_pool, (strlen(tmp)+1)*sizeof(char));
+                    //request->UA = (char*)malloc(strlen(tmp) * sizeof(char));
                     strcpy(request->UA, tmp);
                     break;
             case 3: //connetion
@@ -64,11 +67,13 @@ int analysis_request(char buf[], struct http_request* request)
             case 5: //Accept-encoding
                     break;
             case 6: 
-                    request->refer = (char*)malloc(strlen(tmp)*sizeof(char));
+                    request->refer = (char*)get_memory(mem_pool, (strlen(tmp)+1)*sizeof(char));
+                    //request->refer = (char*)malloc(strlen(tmp)*sizeof(char));
                     strcpy(request->refer, tmp);
                     break;
             case 7:
-                    request->type = (char*)malloc(strlen(tmp)*sizeof(char));
+                    request->type = (char *)get_memory(mem_pool, (strlen(tmp)+1)*sizeof(char));
+                    //request->type = (char*)malloc(strlen(tmp)*sizeof(char));
                     strcpy(request->type, tmp);
                     break;
             case 8:
@@ -85,17 +90,18 @@ char *analysis_uri(struct http_request* request)
 {
     char *ptr = request->uri;
     char *tmp, *result; 
-    
-    tmp = malloc(strlen(request->uri));
+    tmp = (char*)get_memory(mem_pool, strlen(request->uri)+1); 
+    //tmp = malloc(strlen(request->uri));
     result   = tmp;
-    DEBUG(request->uri);
+    DEBUG("%s", request->uri);
     while( *ptr != '?' && *ptr != '\0') {
         *(tmp++) = *(ptr++);
     }
     *tmp = '\0';
     if('?' == *ptr) {
         ptr++;
-        request->query = malloc(strlen(request->uri));
+        request->query = (char*)get_memory(mem_pool, strlen(request->uri)+1); 
+        //request->query = malloc(strlen(request->uri));
         strcpy(request->query, ptr);
         DEBUG("request->query is %s",request->query);
     }
@@ -136,15 +142,16 @@ void init_request(struct http_request* request)
 void handle_request(int fd, char buf[])
 {
     /*for DEBUG*/
-    //DEBUG("========the request is ===================================\n");
-    //DEBUG("%s",buf);
-    //DEBUG("===========request end ===================================\n");
+    DEBUG("========the request is ===================================\n");
+    DEBUG("%s",buf);
+    DEBUG("===========request end ===================================\n");
 
     char *base_dir = BASE_DIR;
     char *file_name;
     struct http_request* request;
-    
-    request = (struct http_request*)malloc(sizeof(struct http_request));
+   
+    request = (struct http_request*)get_memory(mem_pool, sizeof(struct http_request)); 
+    //request = (struct http_request*)malloc(sizeof(struct http_request));
     init_request(request); 
 
     analysis_request(buf, request);
@@ -158,17 +165,20 @@ void handle_request(int fd, char buf[])
 
     /*参考apache通过判断是否是cgi-bin文件夹中的内容来判断是否是cgi程序*/
     if ( NULL == strstr(request->uri, "/cgi-bin")) { // static file
-        file_name = (char *)malloc((strlen(request->uri) + strlen(base_dir))*sizeof(char));
+        file_name = (char*)get_memory(mem_pool, (strlen(request->uri) + strlen(base_dir)+1) * sizeof(char));
+        //file_name = (char *)malloc((strlen(request->uri) + strlen(base_dir))*sizeof(char));
         if ( !strcmp(request->uri, "/") ) {
+            DEBUG("the uri is / requset index page");
             sprintf(file_name, "%s%s", base_dir, "/index.html");
         } else {
+            DEBUG("uri is %s", request->uri);
             char *name = analysis_uri(request);
             sprintf(file_name, "%s%s", base_dir, name);
         }
 
         enum type f_type;
-        char tmp[BUFF_SIZE];
-
+        char tmp[BUF_SIZE];
+        DEBUG("filename=%s", file_name);
         f_type = file_type(file_name);
         if (FILE_FOLD == f_type) { 
             //如果是文件夹，那么先查看index.html是否存在
@@ -194,6 +204,7 @@ void handle_request(int fd, char buf[])
             DEBUG("正常文件done");
            // return;
         }else if(FILE_OTHER == f_type) {
+            DEBUG("file_name is %s",file_name);
             http404(request);
             sprintf(tmp, "%s/404.html", base_dir);
             do_static_file(tmp, fd);
@@ -220,10 +231,12 @@ void do_static_file(char *file_name, int fd) {
        NOTICE("do_static_file , fopen , fp is NULL %s\n",file_name);
    }
    len = file_len(fp);
-   buf = (char*)malloc(len*sizeof(char));
+   buf = get_memory(mem_pool, len*sizeof(char));
+   //buf = (char*)malloc(len*sizeof(char));
    
    file_content(fp, buf);
-   tmp = (char*)malloc((len+30)*sizeof(char));
+   tmp = (char*)get_memory(mem_pool, (len+30)*sizeof(char));
+   // tmp = (char*)malloc((len+30)*sizeof(char));
    
    NOTICE("lenth=%d\n", len); 
   
@@ -246,8 +259,10 @@ void do_folder(char *dir_name, int fd) {
         NOTICE("open dir %s failed\n", dir_name);
     }
 
-    buf     = (char*)malloc(BUFF_SIZE*sizeof(char));
-    result  = (char*)malloc(BUFF_SIZE*sizeof(char));
+    buf     = (char*)get_memory(mem_pool, BUF_SIZE*sizeof(char));
+    result  = (char*)get_memory(mem_pool, BUF_SIZE*sizeof(char));
+    //buf     = (char*)malloc(BUF_SIZE*sizeof(char));
+    //result  = (char*)malloc(BUF_SIZE*sizeof(char));
     *result = '\0';
     dir_name+= strlen(BASE_DIR);
     while((dir_content = readdir(dir)) != NULL) {
@@ -268,7 +283,8 @@ int do_script_file(struct http_request* request)
     pid_t pid;
     int pipe_fd[2];
     
-    file_name = (char*)malloc(strlen(request->uri));
+    file_name = (char*)get_memory(mem_pool, strlen(request->uri) + 1); 
+    //file_name = (char*)malloc(strlen(request->uri));
     request->uri = analysis_uri(request);
     sprintf(file_name, "%s%s", base_dir, request->uri);
     /*need fix*/

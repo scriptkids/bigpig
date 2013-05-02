@@ -74,8 +74,8 @@ char *process_dir(char *dir_name)
         NOTICE("open dir %s failed \n", dir_name);
         return NULL;
     }
-    buf = (char*)malloc(BUFF_SIZE*sizeof(char));
-    result = (char*)malloc(BUFF_SIZE*sizeof(char));
+    buf = (char*)malloc(BUF_SIZE*sizeof(char));
+    result = (char*)malloc(BUF_SIZE*sizeof(char));
     *result = '\0';
     while((dir_content = readdir(dir)) != NULL) {
         sprintf(buf, "<p><a href=\"%s/%s\">%s</a></p>\r\n", dir_name, dir_content->d_name, dir_content->d_name);

@@ -12,11 +12,11 @@
 #define MAX_EVENTS 1000
 void run_server(int listenfd) 
 {
-    struct epoll_event ev,events[MAX_EVENTS];
     char buf[1024];
     struct sockaddr_in cliaddr;
+    struct epoll_event ev,events[MAX_EVENTS];
     socklen_t clilen;
-    int epfd, nfds, connfd;
+    int nfds, connfd, epfd;
     int i, num;
     char *add, *now;
     pid_t pid;
@@ -47,8 +47,8 @@ void run_server(int listenfd)
         write(STDOUT_FILENO, string, strlen(string)); 
 
     } else {//worker
-        epfd = epoll_create(20);
 
+        epfd = epoll_create(20);
         ev.events = EPOLLIN;
         ev.data.fd = listenfd; 
         if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
@@ -72,6 +72,8 @@ void run_server(int listenfd)
                     if ((num = read(events[i].data.fd, buf, MAXLINE)) < 0) {
                         NOTICE("pid is %d read error! fd is %d\n", getpid(), events[i].data.fd);
                         /*not tested yet*/
+
+                        // epoll_ctl() del
                         close(events[i].data.fd);
                         //shutdown(events[i].data.fd, SHUT_RDWR);
                     } else if (0 == num) {
@@ -79,6 +81,7 @@ void run_server(int listenfd)
                         close(events[i].data.fd);
                         shutdown(events[i].data.fd, SHUT_RDWR);
                     } else {
+                        NOTICE("begin to handle request");
                         handle_request(events[i].data.fd, buf);
                         NOTICE("pid is %d handle_request DONE!!", getpid());
                     }
@@ -100,6 +103,12 @@ void init_server()
         NOTICE("open ACCESS_LOG error!!");
         exit(1);
     }
+    mem_pool = create_pool(1024*1024);
+    if (NULL == mem_pool) {
+        NOTICE("no memory to malloc");
+        exit(1);
+    }
+
 }
 void free_server()
 {
