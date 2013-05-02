@@ -12,23 +12,15 @@
 #define MAX_EVENTS 1000
 void run_server(int listenfd) 
 {
-    struct epoll_event ev,events[MAX_EVENTS];
     char buf[1024];
     struct sockaddr_in cliaddr;
     socklen_t clilen;
-    int epfd, nfds, connfd;
+    int nfds, connfd;
     int i, num;
     char *add, *now;
     pid_t pid;
 
     bzero(buf,sizeof(buf));
-    epfd = epoll_create(20);
-
-    ev.events = EPOLLIN;
-    ev.data.fd = listenfd; 
-    if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
-        perror("epoll_ctl: listenfd"); 
-    }
 
     /*fork出worker进程*/
     for (i = 0; i < WORKER_NUM; i++) {
@@ -46,6 +38,14 @@ void run_server(int listenfd)
         write(STDOUT_FILENO, string, strlen(string)); 
 
     } else {//worker
+        struct epoll_event ev,events[MAX_EVENTS];
+        int epfd = epoll_create(20);
+
+        ev.events = EPOLLIN;
+        ev.data.fd = listenfd; 
+        if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
+            perror("epoll_ctl: listenfd"); 
+        }
         while(1) { 
             nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
             NOTICE("pid is %d epoll_wait nfds == %d\n",getpid(), nfds);
@@ -64,8 +64,11 @@ void run_server(int listenfd)
                     if ((num = read(events[i].data.fd, buf, MAXLINE)) <= 0) {
                         NOTICE("pid is %d read error!\n", getpid());
                         /*not tested yet*/
+
+                        // epoll_ctl() del
                         close(events[i].data.fd);
                     } else {
+                        NOTICE("begin to handle request");
                         handle_request(events[i].data.fd, buf);
                         NOTICE("pid is %d handle_request DONE!!", getpid());
                     }
@@ -87,6 +90,12 @@ void init_server()
         NOTICE("open ACCESS_LOG error!!");
         exit(1);
     }
+    mem_pool = create_pool(1024*1024);
+    if (NULL == mem_pool) {
+        NOTICE("no memory to malloc");
+        exit(1);
+    }
+
 }
 void free_server()
 {
