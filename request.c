@@ -5,6 +5,78 @@ char http_header[][22]={"Host:","Accept:",\
         "Accept-Encoding:", "Referer:", "Content-Type:", \
         "Content-Length:",};
 
+void handle_request(int fd, char buf[])
+{
+    /*for DEBUG*/
+    DEBUG("========the request is ===================================");
+    DEBUG("%s",buf);
+    DEBUG("===========request end ===================================");
+
+    char *base_dir = BASE_DIR;
+    char *file_name;
+    struct http_request* request;
+   
+    request = (struct http_request*)get_memory(mem_pool, sizeof(struct http_request)); 
+    //request = (struct http_request*)malloc(sizeof(struct http_request));
+    init_request(request); 
+
+    analysis_request(buf, request);
+    request->fd = fd;
+
+    /*参考apache通过判断是否是cgi-bin文件夹中的内容来判断是否是cgi程序*/
+    if ( NULL == strstr(request->uri, "/cgi-bin")) { // static file
+        file_name = (char*)get_memory(mem_pool, (strlen(request->uri) + strlen(base_dir)+1) * sizeof(char));
+        //file_name = (char *)malloc((strlen(request->uri) + strlen(base_dir))*sizeof(char));
+        if ( !strcmp(request->uri, "/") ) {
+            DEBUG("the uri is / requset index page");
+            sprintf(file_name, "%s%s", base_dir, "/index.html");
+        } else {
+            DEBUG("uri is %s", request->uri);
+            char *name = analysis_uri(request);
+            sprintf(file_name, "%s%s", base_dir, name);
+        }
+
+        enum type f_type;
+        char tmp[BUF_SIZE];
+        DEBUG("filename=%s", file_name);
+        f_type = file_type(file_name);
+        if (FILE_FOLD == f_type) { 
+            //如果是文件夹，那么先查看index.html是否存在
+            //存在则打开index.html不存在，打开文件夹。
+            DEBUG("文件夹");
+            strcpy(tmp, file_name);
+            strcat(tmp, "/index.html");
+            if (FILE_OTHER == file_type(tmp)) { //index.html 文件不存在,返回文件夹内容
+                DEBUG("文件夹下不存在index.html");
+                http200(request);
+                do_folder(file_name, fd);
+            }else {//index.html 文件存在，打开index.html
+                DEBUG("文件夹下存在index.html");
+                http200(request);
+                do_static_file(tmp, fd);
+            } 
+        }else if(FILE_REG == f_type) { 
+            //请求是正常文件
+            DEBUG("正常文件");
+            http200(request);
+            DEBUG("http200done\n");
+            do_static_file(file_name, fd);
+            DEBUG("正常文件done");
+           // return;
+        }else if(FILE_OTHER == f_type) {
+            DEBUG("file_name is %s",file_name);
+            http404(request);
+            sprintf(tmp, "%s/404.html", base_dir);
+            do_static_file(tmp, fd);
+            //return;
+        }
+
+    }else if( NULL != strstr(request->uri, "/cgi-bin") ) {  //for script
+        set_cgi_env(request);
+        do_script_file(request); 
+    }
+
+}
 int analysis_request(char buf[], struct http_request* request)
 {
     char req[MAXLINE];
@@ -20,7 +92,7 @@ int analysis_request(char buf[], struct http_request* request)
     request->uri = (char*)get_memory(mem_pool, (strlen(tmp) + 1) * sizeof(char));
     //request->uri = (char *)malloc(strlen(tmp) * sizeof(char));
     strcpy(request->uri, tmp);
-    
+    DEBUG("request->uri is %s\n", request->uri);    
 
     tmp = strtok(NULL, " ");
 
@@ -83,7 +155,7 @@ int analysis_request(char buf[], struct http_request* request)
                     break;
         }
     }
-
+    show_info(request);
     return 0; 
 }
 char *analysis_uri(struct http_request* request) 
@@ -137,87 +209,6 @@ void init_request(struct http_request* request)
     request->refer  = NULL;
     request->type   = NULL;
     request->uri    = NULL;
-
-}
-void handle_request(int fd, char buf[])
-{
-    /*for DEBUG*/
-    DEBUG("========the request is ===================================\n");
-    DEBUG("%s",buf);
-    DEBUG("===========request end ===================================\n");
-
-    char *base_dir = BASE_DIR;
-    char *file_name;
-    struct http_request* request;
-   
-    request = (struct http_request*)get_memory(mem_pool, sizeof(struct http_request)); 
-    //request = (struct http_request*)malloc(sizeof(struct http_request));
-    init_request(request); 
-
-    analysis_request(buf, request);
-    //no more needed
-    if(NULL == request ) {
-        DEBUG("request is NULL");
-        return;
-    }
-
-    request->fd = fd;
-
-    /*参考apache通过判断是否是cgi-bin文件夹中的内容来判断是否是cgi程序*/
-    if ( NULL == strstr(request->uri, "/cgi-bin")) { // static file
-        file_name = (char*)get_memory(mem_pool, (strlen(request->uri) + strlen(base_dir)+1) * sizeof(char));
-        //file_name = (char *)malloc((strlen(request->uri) + strlen(base_dir))*sizeof(char));
-        if ( !strcmp(request->uri, "/") ) {
-            DEBUG("the uri is / requset index page");
-            sprintf(file_name, "%s%s", base_dir, "/index.html");
-        } else {
-            DEBUG("uri is %s", request->uri);
-            char *name = analysis_uri(request);
-            sprintf(file_name, "%s%s", base_dir, name);
-        }
-
-        enum type f_type;
-        char tmp[BUF_SIZE];
-        DEBUG("filename=%s", file_name);
-        f_type = file_type(file_name);
-        if (FILE_FOLD == f_type) { 
-            //如果是文件夹，那么先查看index.html是否存在
-            //存在则打开index.html不存在，打开文件夹。
-            DEBUG("文件夹");
-            strcpy(tmp, file_name);
-            strcat(tmp, "/index.html");
-            if (FILE_OTHER == file_type(tmp)) { //index.html 文件不存在,返回文件夹内容
-                DEBUG("文件夹下不存在index.html");
-                http200(request);
-                do_folder(file_name, fd);
-            }else {//index.html 文件存在，打开index.html
-                DEBUG("文件夹下存在index.html");
-                http200(request);
-                do_static_file(tmp, fd);
-            } 
-        }else if(FILE_REG == f_type) { 
-            //请求是正常文件
-            DEBUG("正常文件");
-            http200(request);
-            DEBUG("http200done\n");
-            do_static_file(file_name, fd);
-            DEBUG("正常文件done");
-           // return;
-        }else if(FILE_OTHER == f_type) {
-            DEBUG("file_name is %s",file_name);
-            http404(request);
-            sprintf(tmp, "%s/404.html", base_dir);
-            do_static_file(tmp, fd);
-            //return;
-        }
-
-    }else if( NULL != strstr(request->uri, "/cgi-bin") ) {  //for script
-        set_cgi_env(request);
-        do_script_file(request); 
-    }
-    //for DEBUG
-    //show_info(request);
-    //need to do access_log  foramt is GET / HTTP/1.1  200 
 
 }
 void do_static_file(char *file_name, int fd) {

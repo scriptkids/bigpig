@@ -18,7 +18,7 @@ void *create_pool(int size)
     pool->end  = pool->last + size;
     pool->size = size;
     pool->next = NULL;
-
+    NOTICE("create a pool size is %d\n", size);
     return pool;
 }
 
@@ -34,7 +34,7 @@ void *get_more_memory(struct pool_node *pool, int size)
     ptr = new_pool->last;
     new_pool->last += size;
     pool->next = new_pool;
-
+    NOTICE("get more memory");
     return ptr;
     /* 
     new_pool = (struct pool_node*)malloc(sizeof(struct pool_node));
@@ -96,4 +96,5 @@ void destory_pool(struct pool_node *pool)
         free(p);
         p = q; 
     }
+    DEBUG("Destory the mem_pool");
 }

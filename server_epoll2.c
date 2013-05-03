@@ -10,15 +10,27 @@
 #include "bp.h"
 
 #define MAX_EVENTS 1000
+void init_server()
+{
+    server_fp   =   fopen(SERVER_LOG, "a+");
+    access_fp   =   fopen(ACCESS_LOG, "a+");
+    if(NULL == server_fp) {
+        NOTICE("open SERVER_LOG error!!");
+        exit(1);
+    } 
+    if(NULL == access_fp) {
+        NOTICE("open ACCESS_LOG error!!");
+        exit(1);
+    }
+}
 void run_server(int listenfd) 
 {
-    char buf[1024];
+    char buf[MAXLINE];
     struct sockaddr_in cliaddr;
     struct epoll_event ev,events[MAX_EVENTS];
     socklen_t clilen;
     int nfds, connfd, epfd;
     int i, num;
-    char *add, *now;
     pid_t pid;
 
     bzero(buf,sizeof(buf));
@@ -38,12 +50,13 @@ void run_server(int listenfd)
         write(STDOUT_FILENO, string, strlen(string)); 
 
     } else {//worker
-
+        NOTICE("a worker started pid is %d", getpid());
         epfd = epoll_create(20);
         ev.events = EPOLLIN;
         ev.data.fd = listenfd; 
         if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
-            perror("epoll_ctl: listenfd"); 
+          //  perror("epoll_ctl: listenfd"); 
+          NOTICE("ADD listenfd to epoll fd error!");
         }
         while(1) { 
             nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
@@ -56,22 +69,20 @@ void run_server(int listenfd)
                     ev.events = EPOLLIN | EPOLLET;
                     ev.data.fd = connfd;
                     epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev); 
-                    add = inet_ntoa(cliaddr.sin_addr);
-                    now = get_time(); 
-                    access_log(access_fp, "%s connected at time %s", add, now);
+                    access_log(access_fp, "%s connected at time %s", inet_ntoa(cliaddr.sin_addr), get_time());
                 } else {
                     if ((num = read(events[i].data.fd, buf, MAXLINE)) < 0) {
                         NOTICE("pid is %d read error! fd is %d\n", getpid(), events[i].data.fd);
                         /*not tested yet*/
-
-                        // epoll_ctl() del
                         close(events[i].data.fd);
+                        epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, &ev);
                         //shutdown(events[i].data.fd, SHUT_RDWR);
                     } else if (0 == num) {
                         NOTICE("pid is %d read error! fd is %d num =0;\n", getpid(), events[i].data.fd);
                         /*need fix..*/
                         close(events[i].data.fd);
                         shutdown(events[i].data.fd, SHUT_RDWR);
+                        epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, &ev);
                     } else {
                         NOTICE("begin to handle request");
                         mem_pool = create_pool(102400);
@@ -84,19 +95,6 @@ void run_server(int listenfd)
             }
             NOTICE("end while");
         }//end while
-    }
-}
-void init_server()
-{
-    server_fp   =   fopen(SERVER_LOG, "a+");
-    access_fp   =   fopen(ACCESS_LOG, "a+");
-    if(NULL == server_fp) {
-        NOTICE("open SERVER_LOG error!!");
-        exit(1);
-    } 
-    if(NULL == access_fp) {
-        NOTICE("open ACCESS_LOG error!!");
-        exit(1);
     }
 }
 void free_server()
@@ -117,7 +115,7 @@ int main(void)
     run_server(listenfd);
 
     free_server();
-
+    /*need to close epfd*/
     return 0;
 }
 

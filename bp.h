@@ -30,11 +30,11 @@
 #include "pool.h"
 #define PORT 80 
 #define MAXLINE 1024
-#define BUF_SIZE 10240
+#define BUF_SIZE 10240 
 #define ACCESS_LOG  "log/access_log"
 #define SERVER_LOG  "log/server_log"
 #define BASE_DIR    "www"
-#define WORKER_NUM 30
+#define WORKER_NUM 2 
 FILE *server_fp;
 FILE *access_fp;
 struct pool_node *mem_pool;

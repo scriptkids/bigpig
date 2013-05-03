@@ -27,8 +27,8 @@ struct http_request {
     char    *type; 
 //    char    value[100]; //for post
     /*need fix*/
-    char host[100];
-    char accept[100];
+    char host[200];
+    char accept[200];
 };
 
 struct http_request* get_info(char buf[]);
