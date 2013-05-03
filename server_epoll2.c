@@ -72,15 +72,15 @@ void run_server(int listenfd)
                     access_log(access_fp, "%s connected at time %s", inet_ntoa(cliaddr.sin_addr), get_time());
                 } else {
                     bzero(buf, sizeof(buf));
-                    if ((num = read(events[i].data.fd, buf, MAXLINE)) < 0) {
+                    if ((num = recv(events[i].data.fd, buf, MAXLINE, 0)) < 0) {
                         NOTICE("pid is %d read error! fd is %d\n", getpid(), events[i].data.fd);
-                        /*not tested yet*/
+                        //not tested yet
                         close(events[i].data.fd);
                         epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                         //shutdown(events[i].data.fd, SHUT_RDWR);
-                    } else if (0 == num) {
+                    } else if (0 == num) {//close
                         NOTICE("pid is %d read error! fd is %d num =0;\n", getpid(), events[i].data.fd);
-                        /*need fix..*/
+                        //need fix..
                         close(events[i].data.fd);
                         shutdown(events[i].data.fd, SHUT_RDWR);
                         epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
