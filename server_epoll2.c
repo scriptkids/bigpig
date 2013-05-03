@@ -75,14 +75,14 @@ void run_server(int listenfd)
                         NOTICE("pid is %d read error! fd is %d\n", getpid(), events[i].data.fd);
                         /*not tested yet*/
                         close(events[i].data.fd);
-                        epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, &ev);
+                        epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                         //shutdown(events[i].data.fd, SHUT_RDWR);
                     } else if (0 == num) {
                         NOTICE("pid is %d read error! fd is %d num =0;\n", getpid(), events[i].data.fd);
                         /*need fix..*/
                         close(events[i].data.fd);
                         shutdown(events[i].data.fd, SHUT_RDWR);
-                        epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, &ev);
+                        epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                     } else {
                         NOTICE("begin to handle request");
                         mem_pool = create_pool(102400);
