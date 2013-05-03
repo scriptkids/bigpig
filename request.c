@@ -28,17 +28,17 @@ void handle_request(int fd, char buf[])
         file_name = (char*)get_memory(mem_pool, (strlen(request->uri) + strlen(base_dir)+1) * sizeof(char));
         //file_name = (char *)malloc((strlen(request->uri) + strlen(base_dir))*sizeof(char));
         if ( !strcmp(request->uri, "/") ) {
-            DEBUG("the uri is / requset index page");
+            //DEBUG("the uri is / requset index page");
             sprintf(file_name, "%s%s", base_dir, "/index.html");
         } else {
-            DEBUG("uri is %s", request->uri);
+            //DEBUG("uri is %s", request->uri);
             char *name = analysis_uri(request);
             sprintf(file_name, "%s%s", base_dir, name);
         }
 
         enum type f_type;
         char tmp[BUF_SIZE];
-        DEBUG("filename=%s", file_name);
+        //DEBUG("filename=%s", file_name);
         f_type = file_type(file_name);
         if (FILE_FOLD == f_type) { 
             //如果是文件夹，那么先查看index.html是否存在
@@ -155,7 +155,7 @@ int analysis_request(char buf[], struct http_request* request)
                     break;
         }
     }
-    show_info(request);
+   // show_info(request);
     return 0; 
 }
 char *analysis_uri(struct http_request* request) 
@@ -165,7 +165,7 @@ char *analysis_uri(struct http_request* request)
     tmp = (char*)get_memory(mem_pool, strlen(request->uri)+1); 
     //tmp = malloc(strlen(request->uri));
     result   = tmp;
-    DEBUG("%s", request->uri);
+    //DEBUG("%s", request->uri);
     while( *ptr != '?' && *ptr != '\0') {
         *(tmp++) = *(ptr++);
     }
@@ -319,7 +319,7 @@ void set_cgi_env(struct http_request* request)
 }
 void header(int fd, char *buf)
 {
-    DEBUG("begin header %d", fd);
+    //DEBUG("begin header %d", fd);
     int left, num;
 
     left = strlen(buf);
@@ -328,17 +328,17 @@ void header(int fd, char *buf)
         num = write(fd, buf, left); 
         left = left - num; 
     }
-    DEBUG("end header");
+    //DEBUG("end header");
     /*for DEBUG*/
     //DEBUG(buf);
 }
 void http200(struct http_request* request)
 {
     //access_log(access_fp, "%s %s %d 200\n", request->method, request->uri, request->version);
-    DEBUG("begind http200");
+    //DEBUG("begind http200");
     header(request->fd, "HTTP/1.1 200 OK\r\n");
     header(request->fd, "Content-Type:text/html\r\n");
-    DEBUG("end http200");
+    //DEBUG("end http200");
 }
 void http404(struct http_request* request)
 {

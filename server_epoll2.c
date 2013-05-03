@@ -71,6 +71,7 @@ void run_server(int listenfd)
                     epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev); 
                     access_log(access_fp, "%s connected at time %s", inet_ntoa(cliaddr.sin_addr), get_time());
                 } else {
+                    bzero(buf, sizeof(buf));
                     if ((num = read(events[i].data.fd, buf, MAXLINE)) < 0) {
                         NOTICE("pid is %d read error! fd is %d\n", getpid(), events[i].data.fd);
                         /*not tested yet*/
@@ -84,7 +85,7 @@ void run_server(int listenfd)
                         shutdown(events[i].data.fd, SHUT_RDWR);
                         epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                     } else {
-                        NOTICE("begin to handle request");
+                        NOTICE("begin to handle request read %d", num);
                         mem_pool = create_pool(102400);
                         handle_request(events[i].data.fd, buf);
                         destory_pool(mem_pool);
