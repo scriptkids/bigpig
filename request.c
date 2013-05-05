@@ -86,7 +86,13 @@ int analysis_request(char buf[], struct http_request* request)
     sscanf(buf, "%[^\n]", req);
 
     tmp = strtok(req, " ");
-    strcpy(request->method, tmp);
+    if (0 == strcmp(tmp, "GET")) {
+        request->method = GET;
+    } else if (0 == strcmp(tmp, "POST")) {
+        request->method = POST;
+    } else {
+        request->method = M_OTHER;
+    }
 
     tmp = strtok(NULL, " ");
     request->uri = (char*)get_memory(mem_pool, (strlen(tmp) + 1) * sizeof(char));
@@ -183,7 +189,7 @@ char *analysis_uri(struct http_request* request)
 void show_info(struct http_request* request)
 {
     DEBUG("in the show_info");
-    DEBUG("Method is %s ", request->method);
+    DEBUG("Method is %d ", request->method);
     DEBUG("Uri is %s ", request->uri);
     DEBUG("http_version is %d ",request->version);
     DEBUG("User-Agent is %s ",request->UA);
@@ -293,12 +299,18 @@ int do_script_file(struct http_request* request)
         //sleep(1);
         dup2(pipe_fd[0], STDIN_FILENO);
         dup2(request->fd, STDOUT_FILENO);
-        execl("/usr/bin/python2", "python2", file_name, (char*)0); 
+        char path[100];
+        strcpy(path, "/home/zhangjiyang/myProject/bigpig/");
+        strcat(path, file_name);
+
+        DEBUG("p=%s f=%s", path, file_name );
+        execl(path, file_name, (char*)0);
+       // execl("/usr/bin/python2", "python2", file_name, (char*)0); 
         exit(0);
     }else if (pid >0) { //father
         close(pipe_fd[0]);
         
-        http200(request);
+        //http200(request);
         write(pipe_fd[1], request->query, strlen(request->query));
         DEBUG(request->query);
         close(pipe_fd[1]); 

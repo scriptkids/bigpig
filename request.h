@@ -8,6 +8,11 @@ enum type {
     FILE_OTHER,
 };
 
+enum http_method {
+    GET,
+    POST,
+    M_OTHER,
+};
 enum http_version {
     V0,
     V1,
@@ -16,7 +21,8 @@ enum http_version {
 
 struct http_request {
     int     fd;
-    char    method[16];
+ //   char    method[16];
+    enum    http_method  method;
     char    *uri;
     enum    http_version version;
     char    *UA;
