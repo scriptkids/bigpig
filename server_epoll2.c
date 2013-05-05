@@ -23,6 +23,26 @@ void init_server()
         exit(1);
     }
 }
+void sig_chld(int signo)
+{
+    pid_t pid;
+    int   stat;
+    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+        NOTICE("worker %d terminated\n", pid);
+    }
+   // fork();
+    NOTICE("a process started %d", getpid());
+    return;
+}
+void sig_pipe(int signo)
+{
+    return;
+}
+void sig_int(int signo)
+{
+    NOTICE("receive SIG_INT !");
+    return;
+}
 void run_server(int listenfd) 
 {
     char buf[MAXLINE];
@@ -39,16 +59,22 @@ void run_server(int listenfd)
         if ((pid = fork()) == 0) {
             break;
         } else if (pid < 0) {
-            perror("fork error!");
+            //perror("fork error!");
+            NOTICE("fork error!");
             exit(1);
         }
     }
 
     if (pid > 0) {//master 
         /*do something*/
+        signal(SIGCHLD, sig_chld);
+        signal(SIGINT, sig_int);
+        signal(SIGPIPE, sig_pipe);
         char *string = "this is the master !\n";
         write(STDOUT_FILENO, string, strlen(string)); 
-
+        while (1) {
+            pause();
+        }
     } else {//worker
         NOTICE("a worker started pid is %d", getpid());
         epfd = epoll_create(20);

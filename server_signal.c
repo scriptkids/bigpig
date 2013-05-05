@@ -63,12 +63,11 @@ void sig_chld(int signo)
 {
     pid_t pid;
     int stat;
-
     pid = wait(&stat);
-    pritnf("child %d terminated\n",pid);
+    printf("child %d terminated\n",pid);
+
+    //pid = fork();
     return;
-
-
 }
 
 
