@@ -38,5 +38,10 @@
 FILE *server_fp;
 FILE *access_fp;
 struct pool_node *mem_pool;
+enum process {
+    WORKER,
+    MASTER,
+};
+
 #endif
 

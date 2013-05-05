@@ -8,6 +8,7 @@
  * 不等于listenfd时，进行doit操作，对events[n].data.fd
  */
 #include "bp.h"
+enum process PROCESS_TYPE;
 
 #define MAX_EVENTS 1000
 void init_server()
@@ -22,6 +23,7 @@ void init_server()
         NOTICE("open ACCESS_LOG error!!");
         exit(1);
     }
+    PROCESS_TYPE = MASTER;
 }
 void sig_chld(int signo)
 {
@@ -30,9 +32,12 @@ void sig_chld(int signo)
     while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
         NOTICE("worker %d terminated\n", pid);
     }
-   // fork();
-    NOTICE("a process started %d", getpid());
-    return;
+        
+    int ppid = fork();
+    if (0 == ppid) {
+        PROCESS_TYPE = WORKER;
+        NOTICE("a worker process started %d", getpid());
+    }
 }
 void sig_pipe(int signo)
 {
@@ -57,6 +62,7 @@ void run_server(int listenfd)
     /*fork出worker进程*/
     for (i = 0; i < WORKER_NUM; i++) {
         if ((pid = fork()) == 0) {
+            PROCESS_TYPE = WORKER;
             break;
         } else if (pid < 0) {
             //perror("fork error!");
@@ -65,7 +71,7 @@ void run_server(int listenfd)
         }
     }
 
-    if (pid > 0) {//master 
+    if (MASTER == PROCESS_TYPE) {//master 
         /*do something*/
         signal(SIGCHLD, sig_chld);
         signal(SIGINT, sig_int);
@@ -73,9 +79,12 @@ void run_server(int listenfd)
         char *string = "this is the master !\n";
         write(STDOUT_FILENO, string, strlen(string)); 
         while (1) {
+            if (PROCESS_TYPE == WORKER) 
+                break;
             pause();
         }
-    } else {//worker
+    }  
+    if (WORKER == PROCESS_TYPE){//worker
         NOTICE("a worker started pid is %d", getpid());
         epfd = epoll_create(20);
         ev.events = EPOLLIN;
@@ -135,7 +144,7 @@ int main(void)
     int listenfd; 
     
     init_server();
-   
+     
     listenfd = tcp_listen(&servaddr);
     
     access_log(server_fp, "server started at prort:%d\n", ntohs(servaddr.sin_port));
