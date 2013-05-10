@@ -1,6 +1,13 @@
 #ifndef  __REQUEST__
 #define  __REQUEST__
 
+#define CONTENT_HTML  "Content-Type: text/html"
+#define CONTENT_CSS   "Content-Type: text/css"
+#define CONTENT_JPG   "Content-Type: image/jpeg"
+#define CONTENT_PNG   "Content-Type: image/png"
+#define CONTENT_GIF   "Content-Type: image/gif"
+#define CONTENT_JS    "Content-Type: text/javascript"
+
 extern char http_header[][22];
 enum type {
     FILE_REG,

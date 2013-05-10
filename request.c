@@ -36,7 +36,7 @@ int read_request(int fd, char *buf)
 void handle_request1(int fd)
 {
     struct pool_node *mem_pool;
-    mem_pool = create_pool(102400);
+    mem_pool = create_pool(1024000);
     char *buf = get_memory(mem_pool, MAXLINE);
     read_request(fd,buf);
     DEBUG("%s",buf); 
@@ -77,20 +77,18 @@ void handle_request1(int fd)
             DEBUG("文件夹");
             strcpy(tmp, file_name);
             strcat(tmp, "/index.html");
+            http200(tmp, request);
             if (FILE_OTHER == file_type(tmp)) { //index.html 文件不存在,返回文件夹内容
                 DEBUG("文件夹下不存在index.html");
-                http200(request);
                 do_folder(file_name, request);
             }else {//index.html 文件存在，打开index.html
                 DEBUG("文件夹下存在index.html");
-                http200(request);
                 do_static_file(tmp, request);
             } 
         }else if(FILE_REG == f_type) { 
             //请求是正常文件
             DEBUG("正常文件");
-            http200(request);
-            DEBUG("http200done\n");
+            http200(file_name, request);
             do_static_file(file_name, request);
             DEBUG("正常文件done");
             // return;
@@ -154,20 +152,19 @@ void handle_request(int fd, char buf[], struct pool_node *mem_pool)
             DEBUG("文件夹");
             strcpy(tmp, file_name);
             strcat(tmp, "/index.html");
+            
+            http200(tmp, request);
             if (FILE_OTHER == file_type(tmp)) { //index.html 文件不存在,返回文件夹内容
                 DEBUG("文件夹下不存在index.html");
-                http200(request);
                 do_folder(file_name, request);
             }else {//index.html 文件存在，打开index.html
                 DEBUG("文件夹下存在index.html");
-                http200(request);
                 do_static_file(tmp, request);
             } 
         }else if(FILE_REG == f_type) { 
             //请求是正常文件
             DEBUG("正常文件");
-            http200(request);
-            DEBUG("http200done\n");
+            http200(file_name, request);
             do_static_file(file_name, request);
             DEBUG("正常文件done");
            // return;
@@ -326,31 +323,37 @@ void init_request(struct http_request* request)
 
 }
 void do_static_file(char *file_name, struct http_request* request) {
-   char *buf, *tmp;
-   FILE *fp;
-   int  len, fd;
+    char *buf, *tmp;
+    FILE *fp;
+    int  len, fd;
 
-   DEBUG("in do_static_file");
-   fd = request->fd;
-   fp = fopen(file_name, "r");
-   if(NULL == fp) {
-       NOTICE("do_static_file , fopen , fp is NULL %s\n",file_name);
-   }
-   len = file_len(fp);
-   buf = get_memory(request->pool, len*sizeof(char));
-   //buf = (char*)malloc(len*sizeof(char));
-   
-   file_content(fp, buf);
-   tmp = (char*)get_memory(request->pool, (len+30)*sizeof(char));
-   // tmp = (char*)malloc((len+30)*sizeof(char));
-   
-   //NOTICE("lenth=%d\n", len); 
-  
-   sprintf(tmp, "Content-Length: %d\r\n\r\n", len);
+    DEBUG("in do_static_file");
+    fd = request->fd;
+    fp = fopen(file_name, "rb");
+    if(NULL == fp) {
+        NOTICE("do_static_file , fopen , fp is NULL %s\n",file_name);
+    }
+    len = file_len(fp);
+    buf = get_memory(request->pool, len*sizeof(char));
+    //buf = (char*)malloc(len*sizeof(char));
 
-   header(fd, tmp);
-   header(fd, buf);
-   fclose(fp);
+    file_content(fp, buf);
+    tmp = (char*)get_memory(request->pool, (len+30)*sizeof(char));
+    // tmp = (char*)malloc((len+30)*sizeof(char));
+
+    //NOTICE("lenth=%d\n", len); 
+
+    sprintf(tmp, "Content-Length: %d\r\n\r\n", len);
+    header(fd, tmp);
+    int left = len, num;
+    while(left > 0) {
+        num = write(fd, buf, left); 
+        DEBUG("num = %d", num);
+        left = left - num; 
+    }
+
+    //header(fd, buf);
+    fclose(fp);
 } 
 void do_folder(char *dir_name, struct http_request* request) {
     DIR             *dir;
@@ -451,25 +454,31 @@ void set_cgi_env(struct http_request* request)
 }
 void header(int fd, char *buf)
 {
-    //DEBUG("begin header %d", fd);
     int left, num;
-
     left = strlen(buf);
    
     while(left > 0) {
         num = write(fd, buf, left); 
+        DEBUG("num = %d", num);
         left = left - num; 
     }
-    //DEBUG("end header");
-    /*for DEBUG*/
-    //DEBUG(buf);
 }
-void http200(struct http_request* request)
+
+void http200(char file_name, struct http_request* request)
 {
-    //access_log(access_fp, "%s %s %d 200\n", request->method, request->uri, request->version);
-    //DEBUG("begind http200");
+    char *dot;
+    
     header(request->fd, "HTTP/1.1 200 OK\r\n");
-    header(request->fd, "Content-Type:text/html\r\n");
+   
+    dot = strstr(file_name, ".");
+    if (NULL != dot) {
+        if ( !strcasecmp(dot, "jpg") || !strcasecmp(dot, "jpeg") ) {
+            header(request->fd, CONTENT_JPG);
+        } else if (!strcasecmp(dot, "")) {
+        
+        }
+    }
+    
     //DEBUG("end http200");
 }
 void http404(struct http_request* request)
