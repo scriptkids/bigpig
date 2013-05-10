@@ -1,6 +1,6 @@
 CFLAGS:=-Wall
 
-bigpig: bigpig.o tcp_listen.o log.o file_ctrl.o request.o pool.o
+bigpig: bigpig.o tcp_listen.o log.o file_ctrl.o request.o pool.o response.o
 	gcc -o$@ $^
 
 server1: server1.o tcp_listen.o

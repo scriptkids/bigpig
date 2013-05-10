@@ -1,7 +1,7 @@
 #ifndef  __BIGPIG__
 #define  __BIGPIG__
 
-#define ISDEBUG 1
+#define ISDEBUG 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +28,8 @@
 #include "request.h"
 #include "tcp_listen.h"
 #include "pool.h"
+#include "response.h"
+
 #define PORT 8888
 #define MAXLINE 10240
 #define BUF_SIZE 10240
@@ -43,5 +45,7 @@ enum process {
     MASTER,
 };
 
+
+void worker_process_cycle(int listenfd);
 #endif
 

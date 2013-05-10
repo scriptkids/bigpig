@@ -24,15 +24,17 @@ try:
     html4 = "your passwd is " + gpasswd + "</html>"
 except:
     html4 ="your passwd is NULL </html>"
+
 print "HTTP/1.1 200 OK"
 print "Content-type: text/html"
 print "Content-Length: %d" %(len(html1)+len(html2)+1+len(html3)+len(html4))
+
 #print "Transfer-Encoding: chunked"
 print 
 
 
 
-
+print int(name)+int(passwd) 
 #result = eval(thing)
 print html1,html2,html3,html4
 print
