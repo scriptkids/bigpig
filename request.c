@@ -22,7 +22,8 @@ int read_request(int fd, char *buf)
             }
         } else if (0 == num){
             NOTICE("receive a EOF fd is %d num =0;\n", fd);
-            close(fd);
+            return 0;
+            //close(fd);
             //epoll return 0;
             //need fix epoll_ctl del
         } else if (num > 0) {

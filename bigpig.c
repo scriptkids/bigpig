@@ -1,12 +1,3 @@
-/*try to use epoll
- * epfd = epoll_create();
- * ev.events =
- * ev.data.fd =
- * epoll_ctl();
- * epoll_wait();
- * 检查epoll_wait的返回值，并for循环进行判断。当fd = listenfd时accept。
- * 不等于listenfd时，进行doit操作，对events[n].data.fd
- */
 #include "bp.h"
 #define MAX_EVENTS 1000
 enum process PROCESS_TYPE;
@@ -88,16 +79,17 @@ void run_server(int listenfd)
         signal(SIGPIPE, sig_pipe);
         char *string = "this is the master !\n";
         write(STDOUT_FILENO, string, strlen(string));
+        /*worker进程挂掉之后，master进程新fork出的worker进程退出循环*/ 
         while (1) {
             if (PROCESS_TYPE == WORKER)
                 break;
             pause();
         }
     }
+
     if (WORKER == PROCESS_TYPE){//worker
-        NOTICE("a worker started pid is %d", getpid());
+        NOTICE("a worker started pid %d at %s at PORT %d", getpid(), get_time(), PORT);
         worker_process_cycle(listenfd);
-        //20 is not needed any more.
     } 
 }
 void worker_process_cycle(int listenfd)
@@ -106,6 +98,7 @@ void worker_process_cycle(int listenfd)
     int i, ret;
     struct sockaddr_in cliaddr;
     socklen_t clilen;
+
     epfd = epoll_create(20);
     ev.events = EPOLLIN;
     ev.data.fd = listenfd;
@@ -114,14 +107,14 @@ void worker_process_cycle(int listenfd)
     }
     while(1) {
         nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
-        NOTICE("pid is %d epoll_wait nfds == %d\n",getpid(), nfds);
+        DEBUG("pid is %d epoll_wait nfds == %d\n",getpid(), nfds);
         for (i = 0; i < nfds; i++) {
             if (events[i].data.fd == listenfd) {
                 while (1) {
                     connfd = accept(listenfd, (struct sockaddr *)\
                             &cliaddr, &clilen);
                     if (connfd > 0) {
-                        NOTICE("pid is %d connfd is %d",getpid(), connfd);
+                        NOTICE("%s conected at time %s pid is %d connfd is %d", inet_ntoa(cliaddr.sin_addr), get_time(), getpid(), connfd);
                         if (-1 == set_noblock(connfd)) {
                             NOTICE("set_noblock error %d", connfd);
                             exit(1);
@@ -136,7 +129,7 @@ void worker_process_cycle(int listenfd)
                             NOTICE("some error occur in accept loop");
                             break;
                         } else {
-                            NOTICE("accept errno == EAGAIN");
+                            NOTICE("in accept errno == EAGAIN");
                             break;
                             //errno == EAGAIN
                         }
@@ -148,15 +141,20 @@ void worker_process_cycle(int listenfd)
                 char *buf = get_memory(mem_pool, MAXLINE);
 
                 ret = read_request(events[i].data.fd, buf);
-                if (0 == ret) {
+                
+                if (0 == ret) {  //服务器要求关闭连接
                     NOTICE("ret == 0");
                     close(events[i].data.fd);
                     epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
-                } else if (1 == ret){
+                } else if (1 == ret){ //进入请求
                     NOTICE("handle_request ");
                     handle_request(events[i].data.fd, buf, mem_pool);
                     NOTICE("handle_request done");
-                } else {
+                    
+                    //关闭连接写这一部分; 
+                    shutdown(events[i].data.fd, SHUT_WR);
+
+                } else { //发生了错误。
                     close(events[i].data.fd);
                     epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                     NOTICE("read error!");
@@ -164,7 +162,6 @@ void worker_process_cycle(int listenfd)
                 destory_pool(mem_pool);
             }
         }
-        NOTICE("end while");
     }//end while
 }
 
