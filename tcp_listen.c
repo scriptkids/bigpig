@@ -24,7 +24,7 @@ int tcp_listen(struct sockaddr_in *servaddr)
         close(serfd);
     }
 
-    if(-1 == listen(serfd, 20)) {
+    if(-1 == listen(serfd, 1024)) {
         perror("tcp_listen listen");
         close(serfd);
     }

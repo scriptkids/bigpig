@@ -27,7 +27,12 @@ int read_request(int fd, char *buf)
             //epoll return 0;
             //need fix epoll_ctl del
         } else if (num > 0) {
-            pos = num;
+            // ET 模式 更改
+            if (num != MAXLINE*2) {
+                pos = num;
+            } else {
+                pos = 0;
+            }
         }
     }
    return 1; 

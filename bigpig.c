@@ -99,13 +99,13 @@ void worker_process_cycle(int listenfd)
     struct sockaddr_in cliaddr;
     socklen_t clilen;
 
-    epfd = epoll_create(20);
+    epfd = epoll_create(200);
     ev.events = EPOLLIN;
     ev.data.fd = listenfd;
     if(epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
         NOTICE("ADD listenfd to epoll fd error!");
     }
-    while(1) {
+    while (1) {
         nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
         DEBUG("pid is %d epoll_wait nfds == %d\n",getpid(), nfds);
         for (i = 0; i < nfds; i++) {
@@ -120,6 +120,7 @@ void worker_process_cycle(int listenfd)
                             exit(1);
                         }
                         ev.events = EPOLLIN | EPOLLET;
+                        //ev.events = EPOLLIN ;
                         ev.data.fd = connfd;
                         epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
                         access_log(access_fp, "%s connected at time %s", inet_ntoa(cliaddr.sin_addr), get_time());
@@ -137,7 +138,7 @@ void worker_process_cycle(int listenfd)
                 }
             } else {
                 struct pool_node *mem_pool;
-                mem_pool = create_pool(1024*1024*1024);
+                mem_pool = create_pool(1024*1024);
                 char *buf = get_memory(mem_pool, MAXLINE);
 
                 ret = read_request(events[i].data.fd, buf);

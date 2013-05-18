@@ -96,5 +96,5 @@ void destory_pool(struct pool_node *pool)
         free(p);
         p = q; 
     }
-    DEBUG("Destory the mem_pool");
+    NOTICE("Destory the mem_pool");
 }
