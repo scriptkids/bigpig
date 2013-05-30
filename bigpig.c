@@ -152,8 +152,9 @@ void worker_process_cycle(int listenfd)
                     handle_request(events[i].data.fd, buf, mem_pool);
                     NOTICE("handle_request done");
                     
+                    close(events[i].data.fd);   
                     //关闭连接写这一部分; 
-                    shutdown(events[i].data.fd, SHUT_WR);
+                 //   shutdown(events[i].data.fd, SHUT_WR);
 
                 } else { //发生了错误。
                     close(events[i].data.fd);

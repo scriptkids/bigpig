@@ -34,7 +34,6 @@ print
 
 
 
-print int(name)+int(passwd) 
 #result = eval(thing)
 print html1,html2,html3,html4
 print
